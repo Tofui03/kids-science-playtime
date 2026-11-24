@@ -1,0 +1,850 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>游戏时间到！It's Playtime! · 趣味科学小课堂</title>
+<link rel="stylesheet" href="../lib/engine.css">
+<link rel="expect" href="#bar" blocking="render">
+</head>
+<body>
+<script src="../lib/engine.js"></script>
+<script src="audio/zh/timings.js"></script>
+<script>
+'use strict';
+const CHAPTER = { number: 1, title: '游戏时间到！It\'s Playtime!', minutes: 4, language: 'zh', film: true, questionKeys: false };
+try { if (localStorage.getItem('captions') === null) setCaptions(true, false); } catch {}
+
+/* ---------- 绘本舞台助手（sc_ 前缀避免全局冲突） ---------- */
+function sc_bg(p, imgName, veil = 0.22) {
+  mk('image', { href: `../img/${imgName}`, x: 0, y: 0, width: 1600, height: 900, preserveAspectRatio: 'xMidYMid slice' }, p);
+  if (veil > 0) mk('rect', { x: 0, y: 0, width: 1600, height: 900, fill: `rgba(255,253,247,${veil})` }, p);
+}
+
+const sc_txt = (p, str, x, y, t0, { size = 30, fill = COL.chalk, anchor = 'start', weight = 700 } = {}) => {
+  const e = T(p, str, { x, y, size, fill, anchor, weight, o: 0 });
+  if (t0 !== null) show(e, t0, 0.35);
+  return e;
+};
+
+function sc_badge(p, label, x = 80, y = 66, fill = '#ff5a5f', t0 = 0.1) {
+  const g = G(p, { x, y, o: 0 });
+  const w = Math.max(150, label.length * 26 + 52);
+  mk('rect', { x: 4, y: -24, width: w, height: 52, rx: 26, fill: 'rgba(60,40,10,0.14)' }, g);
+  mk('rect', { x: 0, y: -28, width: w, height: 52, rx: 26, fill }, g);
+  T(g, label, { x: w / 2, y: 7, size: 25, fill: '#ffffff', weight: 700, anchor: 'middle' });
+  tw(g, { o: 1 }, t0, 0.3);
+  return g;
+}
+
+function sc_panelCard(p, x, y, w, h, { fill = 'rgba(255,253,247,0.92)', stroke = '#f0dec0', sw = 4, rx = 28 } = {}) {
+  const g = G(p, { x, y });
+  mk('rect', { x: 6, y: 10, width: w, height: h, rx, fill: 'rgba(80,50,20,0.1)' }, g);
+  mk('rect', { x: 0, y: 0, width: w, height: h, rx, fill, stroke, 'stroke-width': sw }, g);
+  return g;
+}
+
+/* 题目选项中的彩色圆块 + 互动即时音效 */
+function sc_swatch(hex) {
+  const sp = h('span', 'sc-swatch');
+  sp.style.background = hex;
+  if (hex.toLowerCase() === '#ffffff') sp.style.borderColor = '#2b241d';
+  return sp;
+}
+
+const SC_SFX_CACHE = {};
+function sc_playSfx(name, vol = 0.6) {
+  try {
+    const a = SC_SFX_CACHE[name] || (SC_SFX_CACHE[name] = new Audio(`audio/sfx/${name}.mp3`));
+    a.currentTime = 0;
+    a.volume = vol * +($('volume')?.value ?? 1);
+    a.play().catch(() => {});
+  } catch {}
+}
+
+/* 可爱眨眼微笑五官（让颜色块和形状都变成活过来的小伙伴） */
+function sc_face(p, x, y, { s = 1, light = false } = {}) {
+  const fg = light ? '#ffffff' : '#2b241d';
+  const g = G(p, { x, y, s });
+  const eyeL = mk('circle', { cx: -14, cy: -4, r: 4.8, fill: fg }, g);
+  const eyeR = mk('circle', { cx: 14, cy: -4, r: 4.8, fill: fg }, g);
+  if (!light) {
+    mk('circle', { cx: -12.5, cy: -5.5, r: 1.6, fill: '#ffffff' }, g);
+    mk('circle', { cx: 15.5, cy: -5.5, r: 1.6, fill: '#ffffff' }, g);
+  }
+  mk('ellipse', { cx: -22, cy: 5, rx: 6, ry: 3.5, fill: '#ff8fa3', opacity: light ? 0.5 : 0.7 }, g);
+  mk('ellipse', { cx: 22, cy: 5, rx: 6, ry: 3.5, fill: '#ff8fa3', opacity: light ? 0.5 : 0.7 }, g);
+  mk('path', { d: 'M-9 8 Q0 17 9 8', fill: 'none', stroke: fg, 'stroke-width': 3, 'stroke-linecap': 'round' }, g);
+  return { g, eyeL, eyeR };
+}
+
+/* 有机颜料水滴块 */
+function sc_blob(p, x, y, fill, { s = 1, stroke = 'none', sw = 0, face = true, lightFace = false } = {}) {
+  const g = G(p, { x, y, s });
+  mk('path', {
+    d: 'M-76 -14 C-86 -48 -38 -64 2 -54 C36 -66 84 -42 78 -8 C90 26 48 60 6 52 C-34 66 -88 38 -76 -14 Z',
+    fill, stroke, 'stroke-width': sw,
+  }, g);
+  mk('ellipse', { cx: -32, cy: -28, rx: 14, ry: 7, transform: 'rotate(-22 -32 -28)', fill: '#ffffff', opacity: 0.35 }, g);
+  const fc = face ? sc_face(g, 0, 2, { s: 0.95, light: lightFace }) : null;
+  return { g, fc };
+}
+
+/* 拿放大镜的小探险家 */
+function sc_explorer(p, x, y, { s = 1 } = {}) {
+  const root = G(p, { x, y, s });
+  mk('ellipse', { cx: 0, cy: 176, rx: 66, ry: 14, fill: 'rgba(60,40,10,0.14)' }, root);
+  mk('rect', { x: -34, y: 100, width: 20, height: 58, rx: 10, fill: '#ffd6b0', stroke: '#2b241d', 'stroke-width': 3 }, root);
+  mk('rect', { x: 14, y: 100, width: 20, height: 58, rx: 10, fill: '#ffd6b0', stroke: '#2b241d', 'stroke-width': 3 }, root);
+  mk('ellipse', { cx: -26, cy: 162, rx: 22, ry: 12, fill: '#ff5a5f', stroke: '#2b241d', 'stroke-width': 3 }, root);
+  mk('ellipse', { cx: 26, cy: 162, rx: 22, ry: 12, fill: '#ff5a5f', stroke: '#2b241d', 'stroke-width': 3 }, root);
+  mk('rect', { x: -42, y: 66, width: 84, height: 48, rx: 10, fill: '#2b5ea8', stroke: '#2b241d', 'stroke-width': 3 }, root);
+  mk('path', { d: 'M-44 0 L44 0 L46 72 L-46 72 Z', fill: '#2d9cdb', stroke: '#2b241d', 'stroke-width': 3 }, root);
+  mk('circle', { cx: 0, cy: 36, r: 13, fill: '#ffd93d' }, root);
+
+  const armL = G(root, { x: -46, y: 14, r: 18 });
+  mk('path', { d: 'M0 0 L-38 48', stroke: '#2b241d', 'stroke-width': 25, 'stroke-linecap': 'round' }, armL);
+  mk('path', { d: 'M0 0 L-38 48', stroke: '#ffd6b0', 'stroke-width': 19, 'stroke-linecap': 'round' }, armL);
+  mk('circle', { cx: -40, cy: 52, r: 12, fill: '#ffd6b0', stroke: '#2b241d', 'stroke-width': 3 }, armL);
+  // 放大镜
+  mk('path', { d: 'M-42 52 L-62 24', stroke: '#2b241d', 'stroke-width': 8, 'stroke-linecap': 'round' }, armL);
+  mk('circle', { cx: -74, cy: 6, r: 28, fill: 'rgba(180,235,255,0.65)', stroke: '#2b241d', 'stroke-width': 6 }, armL);
+
+  const armR = G(root, { x: 46, y: 14, r: -110 });
+  mk('path', { d: 'M0 0 L38 48', stroke: '#2b241d', 'stroke-width': 25, 'stroke-linecap': 'round' }, armR);
+  mk('path', { d: 'M0 0 L38 48', stroke: '#ffd6b0', 'stroke-width': 19, 'stroke-linecap': 'round' }, armR);
+  mk('circle', { cx: 40, cy: 52, r: 12, fill: '#ffd6b0', stroke: '#2b241d', 'stroke-width': 3 }, armR);
+
+  const head = G(root, { x: 0, y: -56 });
+  mk('circle', { cx: -58, cy: 6, r: 13, fill: '#ffd6b0', stroke: '#2b241d', 'stroke-width': 3 }, head);
+  mk('circle', { cx: 58, cy: 6, r: 13, fill: '#ffd6b0', stroke: '#2b241d', 'stroke-width': 3 }, head);
+  mk('circle', { cx: 0, cy: 0, r: 58, fill: '#ffd6b0', stroke: '#2b241d', 'stroke-width': 3 }, head);
+  mk('path', { d: 'M-60 -6 A60 60 0 0 1 60 -6 C38 -36 14 -38 0 -22 C-16 -40 -42 -30 -60 -6 Z', fill: '#231f20' }, head);
+  mk('path', { d: 'M-20 -58 C-8 -76 16 -74 28 -52', fill: 'none', stroke: '#231f20', 'stroke-width': 9, 'stroke-linecap': 'round' }, head);
+  const eyeL = mk('circle', { cx: -22, cy: -4, r: 7, fill: '#2b241d' }, head);
+  const eyeR = mk('circle', { cx: 22, cy: -4, r: 7, fill: '#2b241d' }, head);
+  mk('circle', { cx: -20, cy: -6, r: 2.4, fill: '#ffffff' }, head);
+  mk('circle', { cx: 24, cy: -6, r: 2.4, fill: '#ffffff' }, head);
+  mk('ellipse', { cx: -35, cy: 12, rx: 9, ry: 5, fill: '#ff8fa3', opacity: 0.7 }, head);
+  mk('ellipse', { cx: 35, cy: 12, rx: 9, ry: 5, fill: '#ff8fa3', opacity: 0.7 }, head);
+  mk('path', { d: 'M-14 22 Q0 36 14 22', fill: 'none', stroke: '#d9483b', 'stroke-width': 4, 'stroke-linecap': 'round' }, head);
+  return { root, head, armL, armR, eyeL, eyeR };
+}
+
+/* 绘制拟人化 3D/2D 形状角色 */
+function sc_drawShape(p, kind, x, y, { s = 1, label = '', en = '' } = {}) {
+  const g = G(p, { x, y, s });
+  let fc = null;
+  if (kind === 'cube') {
+    mk('polygon', { points: '-52,-32 0,-60 52,-32 0,-4', fill: '#ffe169', stroke: '#2b241d', 'stroke-width': 3 }, g);
+    mk('polygon', { points: '-52,-32 0,-4 0,56 -52,28', fill: '#ffbe0b', stroke: '#2b241d', 'stroke-width': 3 }, g);
+    mk('polygon', { points: '0,-4 52,-32 52,28 0,56', fill: '#f39c12', stroke: '#2b241d', 'stroke-width': 3 }, g);
+    fc = sc_face(g, -22, 16, { s: 0.65 });
+  } else if (kind === 'cuboid') {
+    mk('polygon', { points: '-86,-22 -44,-46 86,-46 44,-22', fill: '#c77dff', stroke: '#2b241d', 'stroke-width': 3 }, g);
+    mk('polygon', { points: '-86,-22 44,-22 44,36 -86,36', fill: '#9d4edd', stroke: '#2b241d', 'stroke-width': 3 }, g);
+    mk('polygon', { points: '44,-22 86,-46 86,12 44,36', fill: '#7b2cbf', stroke: '#2b241d', 'stroke-width': 3 }, g);
+    fc = sc_face(g, -20, 8, { s: 0.72, light: true });
+  } else if (kind === 'sphere') {
+    mk('circle', { cx: 0, cy: 0, r: 54, fill: '#274c9b', stroke: '#2b241d', 'stroke-width': 3 }, g);
+    mk('circle', { cx: -10, cy: -12, r: 42, fill: '#3b6fd8' }, g);
+    mk('ellipse', { cx: -22, cy: -26, rx: 14, ry: 8, transform: 'rotate(-28 -22 -26)', fill: '#9cc2ff', opacity: 0.8 }, g);
+    fc = sc_face(g, 0, 4, { s: 0.85, light: true });
+  } else if (kind === 'pyramid') {
+    mk('polygon', { points: '0,-62 -56,42 10,56', fill: '#24b0e6', stroke: '#2b241d', 'stroke-width': 3 }, g);
+    mk('polygon', { points: '0,-62 10,56 58,30', fill: '#0b87ba', stroke: '#2b241d', 'stroke-width': 3 }, g);
+    fc = sc_face(g, -14, 16, { s: 0.68, light: true });
+  } else if (kind === 'square') {
+    mk('rect', { x: -50, y: -50, width: 100, height: 100, rx: 10, fill: '#ff70a6', stroke: '#2b241d', 'stroke-width': 3 }, g);
+    fc = sc_face(g, 0, 4, { s: 0.88 });
+  } else if (kind === 'rectangle') {
+    mk('rect', { x: -86, y: -44, width: 172, height: 88, rx: 10, fill: '#8ac926', stroke: '#2b241d', 'stroke-width': 3 }, g);
+    fc = sc_face(g, 0, 4, { s: 0.88 });
+  } else if (kind === 'circle') {
+    mk('circle', { cx: 0, cy: 0, r: 54, fill: '#ff7b29', stroke: '#2b241d', 'stroke-width': 3 }, g);
+    fc = sc_face(g, 0, 4, { s: 0.88, light: true });
+  } else if (kind === 'triangle') {
+    mk('polygon', { points: '0,-56 -60,48 60,48', fill: '#19a7e0', stroke: '#2b241d', 'stroke-width': 3, 'stroke-linejoin': 'round' }, g);
+    fc = sc_face(g, 0, 18, { s: 0.78, light: true });
+  }
+  if (label) {
+    T(g, label, { x: 0, y: 92, size: 28, fill: '#2b241d', weight: 700, anchor: 'middle' });
+    if (en) T(g, en, { x: 0, y: 122, size: 22, fill: '#665c50', weight: 600, anchor: 'middle' });
+  }
+  return { g, fc };
+}
+
+/* ---------- 听音找一找形状列表 ---------- */
+let sc_shapeThings = [];
+const SC_SHAPE_ASKS = [
+  { word: '三角形', clip: 'q-triangle', again: 'r-triangle' },
+  { word: '圆形', clip: 'q-circle', again: 'r-circle' },
+  { word: '正方形', clip: 'q-square', again: 'r-square' },
+  { word: '球体', clip: 'q-sphere', again: 'r-sphere' },
+  { word: '正方体', clip: 'q-cube', again: 'r-cube' },
+];
+
+/* ---------- 节拍时间线 BEATS ---------- */
+const BEATS = [
+  /* 1. 活泼开场 */
+  ['intro', '游戏时间到！It\'s Playtime!', (m, D) => {
+    const p = panel(0);
+    sc_bg(p, 'bg_playroom.jpg', 0.14);
+    sfx('intro', 0.2, 'bell', 0.55);
+
+    sc_badge(p, '趣味科学小课堂', 84, 68, '#ff5a5f', 0.1);
+    const titleBox = sc_panelCard(p, 560, 140, 860, 260, { fill: 'rgba(255,255,255,0.92)', stroke: '#ffbe0b', sw: 5, rx: 36 });
+    T(titleBox, '游戏时间到！', { x: 430, y: 112, size: 74, fill: '#ff5a5f', weight: 700, anchor: 'middle' });
+    T(titleBox, 'It\'s Playtime!', { x: 430, y: 186, size: 42, fill: '#2d7dd2', weight: 700, anchor: 'middle' });
+    put(titleBox, { o: 0, s: 0.85 }); tw(titleBox, { o: 1, s: 1 }, 0.25, 0.5, back);
+
+    const exp = sc_explorer(p, 320, 520, { s: 1.48 });
+    put(exp.root, { o: 0, y: 580 });
+    tw(exp.root, { o: 1, y: 520 }, 0.2, 0.6, out);
+
+    // 四个主题徽章图标随旁白跳出（使用纯 SVG 彩点/图形图标，避免无 emoji 字体时出现方框）
+    const tags = [
+      ['认识颜色', '#ff5a5f', 660, 515, 0, 'dot'],
+      ['混色魔法', '#9d4edd', 920, 515, 0.25, 'star'],
+      ['形状朋友', '#19a7e0', 1180, 515, 0.5, 'tri'],
+      ['分类与影子', '#2bb673', 920, 660, 0.75, 'sq'],
+    ];
+    tags.forEach(([txt, col, tx, ty, dt, icon]) => {
+      const b = G(p, { x: tx, y: ty, o: 0, s: 0.82 });
+      mk('rect', { x: -115, y: -36, width: 230, height: 72, rx: 36, fill: '#ffffff', stroke: col, 'stroke-width': 4 }, b);
+      if (icon === 'dot') mk('circle', { cx: -74, cy: 0, r: 12, fill: col }, b);
+      else if (icon === 'star') mk('polygon', { points: '-74,-14 -69,-4 -59,-4 -67,3 -64,13 -74,7 -84,13 -81,3 -89,-4 -79,-4', fill: col }, b);
+      else if (icon === 'tri') mk('polygon', { points: '-74,-13 -87,11 -61,11', fill: col }, b);
+      else mk('rect', { x: -85, y: -11, width: 22, height: 22, rx: 4, fill: col }, b);
+      T(b, txt, { x: 14, y: 10, size: 28, fill: col, weight: 700, anchor: 'middle' });
+      tw(b, { o: 1, s: 1 }, m('ready', dt), 0.38, back);
+    });
+
+    clockRun(t => {
+      put(exp.armR, { r: -110 + 18 * Math.sin(t * 7) });
+      put(exp.head, { r: 3.5 * Math.sin(t * 2.5) });
+      put(exp.eyeL, { s: (t % 3.1 > 2.95) ? 0.15 : 1 });
+      put(exp.eyeR, { s: (t % 3.1 > 2.95) ? 0.15 : 1 });
+    }, D, { tail: true });
+  }, { lead: false }],
+
+  /* 2. 九种颜色（会眨眼的颜料水滴宝宝） */
+  ['colours', '颜色 Colours', (m, D) => {
+    const p = panel(0);
+    sc_bg(p, 'bg_playroom.jpg', 0.26);
+    sc_badge(p, '颜色 Colours', 84, 64, '#ff5a5f', 0.1);
+    const sub = sc_panelCard(p, 510, 36, 910, 56, { fill: 'rgba(255,255,255,0.9)', stroke: '#f0dec0', sw: 2.5, rx: 28 });
+    T(sub, '这里有不同的颜色 · There are different colours.', { x: 455, y: 37, size: 27, fill: '#2b241d', weight: 700, anchor: 'middle' });
+    put(sub, { o: 0 }); show(sub, 0.2, 0.35);
+
+    const palette = [
+      ['c_red', '红色', 'red', '#e63946', '#2b241d', true],
+      ['c_yellow', '黄色', 'yellow', '#ffd60a', '#2b241d', false],
+      ['c_green', '绿色', 'green', '#57cc3a', '#2b241d', false],
+      ['c_brown', '褐色', 'brown', '#a0522d', '#2b241d', true],
+      ['c_orange', '橙色', 'orange', '#ff851b', '#2b241d', false],
+      ['c_blue', '蓝色', 'blue', '#00a8e8', '#2b241d', true],
+      ['c_purple', '紫色', 'purple', '#7b2cbf', '#2b241d', true],
+      ['c_white', '白色', 'white', '#ffffff', '#2b241d', false],
+      ['c_black', '黑色', 'black', '#2b2b2b', '#2b241d', true],
+    ];
+
+    const blobs = [];
+    palette.forEach(([mkName, zh, en, hex, border, lightFace], i) => {
+      const col = i % 3, row = Math.floor(i / 3);
+      const x = 350 + col * 450, y = 232 + row * 224;
+      const card = G(p, { x, y, o: 0, s: 0.78 });
+      mk('rect', { x: -175, y: -88, width: 350, height: 186, rx: 24, fill: 'rgba(255,255,255,0.92)', stroke: '#f0dec0', 'stroke-width': 3 }, card);
+      const b = sc_blob(card, -68, 6, hex, {
+        s: 0.92,
+        stroke: hex === '#ffffff' ? '#2b241d' : 'none',
+        sw: hex === '#ffffff' ? 3 : 0,
+        lightFace,
+      });
+      T(card, zh, { x: 84, y: -4, size: 42, fill: '#2b241d', weight: 700, anchor: 'middle' });
+      T(card, en, { x: 84, y: 42, size: 30, fill: '#665c50', weight: 600, anchor: 'middle' });
+      const tAt = m(mkName);
+      tw(card, { o: 1, s: 1 }, tAt, 0.36, back);
+      sfx('colours', tAt, 'pop', 0.45);
+      blobs.push({ b, phase: i * 0.7 });
+    });
+
+    clockRun(t => {
+      blobs.forEach(({ b, phase }) => {
+        if (b.fc) {
+          const blink = ((t + phase) % 3.6 > 3.45) ? 0.15 : 1;
+          put(b.fc.eyeL, { s: blink });
+          put(b.fc.eyeR, { s: blink });
+          put(b.g, { r: 3 * Math.sin(t * 2.5 + phase) });
+        }
+      });
+    }, D, { tail: true });
+  }, { lead: false }],
+
+  /* 3. 混色魔法动态演示 */
+  ['mixing_demo', '颜色的混合 Mixing colours', (m, D) => {
+    const p = panel(0);
+    sc_bg(p, 'bg_magic_lab.jpg', 0.22);
+    sc_badge(p, '混色魔法 Mixing colours', 84, 64, '#9d4edd', 0.1);
+    sc_txt(p, '我们可以将两种颜色混合起来，得到新的颜色。', 800, 108, 0.2, { size: 30, fill: '#2b241d', anchor: 'middle' });
+    sc_txt(p, 'We can mix two colours to get a new colour.', 800, 146, 0.35, { size: 24, fill: '#665c50', anchor: 'middle' });
+
+    const rows = [
+      ['mix1', 'res1', 310, '#00a8e8', '蓝色 blue', '#e63946', '红色 red', '#7b2cbf', '紫色 purple'],
+      ['mix2', 'res2', 620, '#ffd60a', '黄色 yellow', '#00a8e8', '蓝色 blue', '#57cc3a', '绿色 green'],
+    ];
+
+    rows.forEach(([mkMix, mkRes, ry, c1, l1, c2, l2, c3, l3]) => {
+      const box = sc_panelCard(p, 150, ry - 115, 1300, 245, { fill: 'rgba(255,253,247,0.9)', stroke: '#e8d5f5', sw: 4 });
+      const b1 = sc_blob(p, 350, ry, c1, { s: 1.05, lightFace: true });
+      const b2 = sc_blob(p, 720, ry, c2, { s: 1.05, lightFace: c2 !== '#ffd60a' });
+      const b3 = sc_blob(p, 1210, ry, c3, { s: 1.15, lightFace: c3 !== '#57cc3a' });
+
+      put(b1.g, { o: 0, s: 0.7 }); tw(b1.g, { o: 1, s: 1 }, m(mkMix), 0.35, back);
+      put(b2.g, { o: 0, s: 0.7 }); tw(b2.g, { o: 1, s: 1 }, m(mkMix, 0.7), 0.35, back);
+
+      const plus = sc_txt(p, '+', 535, ry + 18, m(mkMix, 0.5), { size: 64, fill: '#2b241d', anchor: 'middle' });
+      const eq = sc_txt(p, '=', 955, ry + 18, m(mkRes, -0.3), { size: 64, fill: '#2b241d', anchor: 'middle' });
+      sc_txt(p, l1, 350, ry + 96, m(mkMix), { size: 26, fill: '#2b241d', anchor: 'middle' });
+      sc_txt(p, l2, 720, ry + 96, m(mkMix, 0.7), { size: 26, fill: '#2b241d', anchor: 'middle' });
+
+      // 魔法混合闪烁光环 + 结果弹出
+      const magic = G(p, { x: 1210, y: ry, o: 0, s: 0.4 });
+      mk('circle', { cx: 0, cy: 0, r: 96, fill: 'none', stroke: '#ffd60a', 'stroke-width': 6, 'stroke-dasharray': '14 10' }, magic);
+      tw(magic, { o: 1, s: 1.15, r: 90 }, m(mkRes, -0.35), 0.55, out);
+      tw(magic, { o: 0, s: 1.4 }, m(mkRes, 0.45), 0.4);
+
+      put(b3.g, { o: 0, s: 0.3 });
+      tw(b3.g, { o: 1, s: 1.15 }, m(mkRes), 0.45, back);
+      sc_txt(p, l3, 1210, ry + 96, m(mkRes, 0.2), { size: 30, fill: c3, anchor: 'middle' });
+      sfx('mixing_demo', m(mkRes), 'chime', 0.55);
+      void box; void plus; void eq;
+    });
+  }, { lead: false }],
+
+  /* 4. 混色猜一猜互动题（选项带彩色圆块，答对左边立即变出笑脸颜料结果） */
+  ['mixing_quiz', '混色猜一猜 Mixing Challenge', (m) => {
+    const p = panel(0);
+    sc_bg(p, 'bg_magic_lab.jpg', 0.22);
+    sc_badge(p, '小小色彩魔法师', 84, 64, '#ff5a5f', 0.1);
+    sc_txt(p, '混合在一起，会得到什么颜色？', 100, 148, 0.2, { size: 30, fill: '#2b241d' });
+
+    const puzzles = [
+      ['#e63946', '红色 red', '#ffd60a', '黄色 yellow', '#ff851b', '橙色 orange', false],
+      ['#2b2b2b', '黑色 black', '#ffffff', '白色 white', '#9e9e9e', '灰色 grey', true],
+      ['#e63946', '红色 red', '#ffffff', '白色 white', '#ff9ebb', '粉红色 pink', false],
+    ];
+
+    S.mixRows = [];
+    puzzles.forEach(([c1, n1, c2, n2, cres, ansName, lightAns], i) => {
+      const py = 260 + i * 195;
+      const card = sc_panelCard(p, 90, py - 78, 690, 165, { fill: 'rgba(255,253,247,0.93)', stroke: '#e6d4b8', sw: 3, rx: 24 });
+      sc_blob(card, 110, 72, c1, { s: 0.6, lightFace: c1 !== '#ffffff' });
+      T(card, n1, { x: 110, y: 140, size: 22, fill: '#2b241d', weight: 700, anchor: 'middle' });
+      T(card, '+', { x: 225, y: 84, size: 44, fill: '#2b241d', weight: 700, anchor: 'middle' });
+      sc_blob(card, 340, 72, c2, { s: 0.6, stroke: c2 === '#ffffff' ? '#2b241d' : 'none', sw: c2 === '#ffffff' ? 2.5 : 0, lightFace: false });
+      T(card, n2, { x: 340, y: 140, size: 22, fill: '#2b241d', weight: 700, anchor: 'middle' });
+      T(card, '=', { x: 460, y: 84, size: 44, fill: '#2b241d', weight: 700, anchor: 'middle' });
+
+      // 问号占位（用中性蓝色虚线，不提前剧透答案颜色）
+      const qCircle = mk('circle', { cx: 580, cy: 76, r: 48, fill: '#f7f1e3', stroke: '#2d7dd2', 'stroke-width': 4, 'stroke-dasharray': '8 6' }, card);
+      const qText = T(card, '?', { x: 580, y: 92, size: 48, fill: '#2d7dd2', weight: 700, anchor: 'middle' });
+
+      // 隐藏的结果笑脸颜料块，答对时弹出
+      const ansWrap = G(card, { x: 580, y: 72, o: 0, s: 0.4 });
+      sc_blob(ansWrap, 0, 0, cres, { s: 0.64, lightFace: lightAns });
+      const ansLbl = T(card, ansName, { x: 580, y: 140, size: 22, fill: '#2b241d', weight: 700, anchor: 'middle', o: 0 });
+      S.mixRows.push({ qCircle, qText, ansWrap, ansLbl });
+
+      put(card, { o: 0, y: py - 60 });
+      tw(card, { o: 1, y: py - 78 }, m('mq', i * 0.45), 0.4, out);
+    });
+  }, {
+    lead: false,
+    hold: 1.8,
+    ask: done => {
+      const revealMix = idx => {
+        const row = S.mixRows?.[idx];
+        if (!row) return;
+        fx(row.qCircle, { o: 0 }, 0, 0.2);
+        fx(row.qText, { o: 0 }, 0, 0.2);
+        fx(row.ansWrap, { o: 1, s: 1 }, 0.05, 0.35, back);
+        fx(row.ansLbl, { o: 1 }, 0.12, 0.25);
+        sc_playSfx('chime', 0.6);
+      };
+      return quiz({ x: 830, y: 155, w: 680, cls: 'side' }, [
+        {
+          id: 'c-mix-ry',
+          prompt: ['魔法 1：', sc_swatch('#e63946'), '红色 + ', sc_swatch('#ffd60a'), '黄色 = ？'],
+          build: choice(
+            [
+              [sc_swatch('#ff851b'), '橙色 orange'],
+              [sc_swatch('#57cc3a'), '绿色 green'],
+              [sc_swatch('#00a8e8'), '蓝色 blue'],
+            ],
+            0,
+            '答对了！红色加黄色会变成像橘子一样的橙色（orange）！',
+            [null, '绿色是黄色和蓝色变出来的哦！', '蓝色是原本就有的颜色，红+黄会变暖色调的橙色。'],
+            () => revealMix(0)
+          ),
+        },
+        {
+          id: 'c-mix-bw',
+          prompt: ['魔法 2：', sc_swatch('#2b2b2b'), '黑色 + ', sc_swatch('#ffffff'), '白色 = ？'],
+          build: choice(
+            [
+              [sc_swatch('#9e9e9e'), '灰色 grey'],
+              [sc_swatch('#7b2cbf'), '紫色 purple'],
+              [sc_swatch('#ffd60a'), '黄色 yellow'],
+            ],
+            0,
+            '真棒！深深的黑色加上亮亮的白色，就变成温和的灰色（grey）！',
+            [null, '紫色需要蓝色和红色哦。', '黑加白不会变黄，而是变灰！'],
+            () => revealMix(1)
+          ),
+        },
+        {
+          id: 'c-mix-rw',
+          prompt: ['魔法 3：', sc_swatch('#e63946'), '红色 + ', sc_swatch('#ffffff'), '白色 = ？'],
+          build: choice(
+            [
+              [sc_swatch('#ff9ebb'), '粉红色 pink'],
+              [sc_swatch('#a0522d'), '褐色 brown'],
+              [sc_swatch('#2b2b2b'), '黑色 black'],
+            ],
+            0,
+            '太厉害了！红色加白色变浅了，就变成了可爱的粉红色（pink）！',
+            [null, '白色会让红色变得柔和浅淡，变成粉红色哦。', '加上白色是变亮，不会变成黑色。'],
+            () => revealMix(2)
+          ),
+        },
+      ], done, '混色魔法题');
+    },
+  }],
+
+  /* 5. 立体形状与平面形状 */
+  ['shapes', '形状 Shapes', (m, D) => {
+    const p = panel(0);
+    sc_bg(p, 'bg_shape_park.jpg', 0.24);
+    sc_badge(p, '形状 Shapes', 84, 62, '#19a7e0', 0.1);
+
+    // 立体形状栏
+    const box3d = sc_panelCard(p, 90, 120, 1420, 340, { fill: 'rgba(255,253,247,0.9)', stroke: '#bfe6f7', sw: 4 });
+    T(box3d, '立体形状 · 3D shapes（胖乎乎可以抱起来的）', { x: 36, y: 46, size: 28, fill: '#0b87ba', weight: 700 });
+    const s3dList = [
+      ['cube', '正方体', 'cube', 260],
+      ['cuboid', '长方体', 'cuboid', 605],
+      ['sphere', '球体', 'sphere', 960],
+      ['pyramid', '正方棱锥体', 'pyramid', 1310],
+    ];
+    const chars = [];
+    s3dList.forEach(([kind, zh, en, sx], i) => {
+      const ch = sc_drawShape(p, kind, sx, 290, { s: 1, label: zh, en });
+      put(ch.g, { o: 0, s: 0.7 });
+      const tAt = m('s3d', i * 1.6);
+      tw(ch.g, { o: 1, s: 1 }, tAt, 0.4, back);
+      sfx('shapes', tAt, 'boing', 0.4);
+      chars.push({ ch, y0: 290, phase: i * 0.8 });
+    });
+
+    // 平面形状栏
+    const box2d = sc_panelCard(p, 90, 495, 1420, 325, { fill: 'rgba(255,253,247,0.9)', stroke: '#f5d2e1', sw: 4 });
+    T(box2d, '平面形状 · 2D shapes（平平的像纸片）', { x: 36, y: 46, size: 28, fill: '#d6336c', weight: 700 });
+    const s2dList = [
+      ['square', '正方形', 'square', 260],
+      ['rectangle', '长方形', 'rectangle', 605],
+      ['circle', '圆', 'circle', 960],
+      ['triangle', '三角形', 'triangle', 1310],
+    ];
+    s2dList.forEach(([kind, zh, en, sx], i) => {
+      const ch = sc_drawShape(p, kind, sx, 655, { s: 1, label: zh, en });
+      put(ch.g, { o: 0, s: 0.7 });
+      const tAt = m('s2d', i * 1.5);
+      tw(ch.g, { o: 1, s: 1 }, tAt, 0.4, back);
+      sfx('shapes', tAt, 'pop', 0.45);
+      chars.push({ ch, y0: 655, phase: (i + 4) * 0.8 });
+    });
+
+    clockRun(t => {
+      chars.forEach(({ ch, y0, phase }) => {
+        put(ch.g, { y: y0 + 5 * Math.sin(t * 3 + phase) });
+        if (ch.fc) {
+          const blink = ((t + phase) % 3.5 > 3.35) ? 0.15 : 1;
+          put(ch.fc.eyeL, { s: blink });
+          put(ch.fc.eyeR, { s: blink });
+        }
+      });
+    }, D, { tail: true });
+    void box3d; void box2d;
+  }, { lead: false }],
+
+  /* 6. 互动游戏：阳光公园听音找形状 */
+  ['shape_find', '游戏 · 听音找形状朋友', (m, D) => {
+    const p = panel(0);
+    sc_bg(p, 'bg_shape_park.jpg', 0.08);
+    sc_badge(p, '互动游戏 · 听音找形状', 84, 62, '#2bb673', 0.1);
+    const bar = sc_panelCard(p, 480, 32, 960, 60, { fill: 'rgba(255,255,255,0.92)', stroke: '#2bb673', sw: 3, rx: 30 });
+    T(bar, '听听小探险家的声音，点一点正确的形状朋友！', { x: 480, y: 39, size: 28, fill: '#2b241d', weight: 700, anchor: 'middle' });
+
+    const sTri = sc_drawShape(p, 'triangle', 270, 290, { s: 1.35 });
+    const sCir = sc_drawShape(p, 'circle', 800, 260, { s: 1.32 });
+    const sSq = sc_drawShape(p, 'square', 1320, 290, { s: 1.32 });
+    const sRect = sc_drawShape(p, 'rectangle', 360, 635, { s: 1.2 });
+    const sCube = sc_drawShape(p, 'cube', 820, 635, { s: 1.35 });
+    const sSph = sc_drawShape(p, 'sphere', 1270, 635, { s: 1.32 });
+
+    sc_shapeThings = [
+      { g: sTri.g, word: '三角形', clip: 'w-triangle', side: 'below' },
+      { g: sCir.g, word: '圆形', clip: 'w-circle', side: 'below' },
+      { g: sSq.g, word: '正方形', clip: 'w-square', side: 'below' },
+      { g: sRect.g, word: '长方形', clip: 'w-rectangle', side: 'above' },
+      { g: sCube.g, word: '正方体', clip: 'w-cube', side: 'above' },
+      { g: sSph.g, word: '球体', clip: 'w-sphere', side: 'above' },
+    ];
+
+    const list = [
+      [sTri, 290, 0], [sCir, 260, 1], [sSq, 290, 2],
+      [sRect, 635, 3], [sCube, 635, 4], [sSph, 635, 5],
+    ];
+    clockRun(t => {
+      list.forEach(([ch, y0, ph]) => {
+        put(ch.g, { y: y0 + 6 * Math.sin(t * 2.6 + ph) });
+        if (ch.fc) {
+          const blink = ((t + ph) % 3.2 > 3.05) ? 0.15 : 1;
+          put(ch.fc.eyeL, { s: blink });
+          put(ch.fc.eyeR, { s: blink });
+        }
+      });
+    }, D, { tail: true });
+  }, {
+    lead: false,
+    ask: done => findWords(sc_shapeThings, SC_SHAPE_ASKS, done),
+    video: false,
+  }],
+
+  /* 7. 东西的分类 Grouping things */
+  ['grouping', '东西的分类 Grouping things', (m) => {
+    const p = panel(0);
+    sc_bg(p, 'bg_shape_park.jpg', 0.25);
+    sc_badge(p, '分类大本领 Grouping', 84, 62, '#2d7dd2', 0.1);
+
+    // 上半区：按颜色分类
+    const topCard = sc_panelCard(p, 90, 118, 1420, 345, { fill: 'rgba(255,253,247,0.92)', stroke: '#ffd166', sw: 4 });
+    T(topCard, '1. 根据颜色分类 · Group by colour', { x: 36, y: 46, size: 28, fill: '#b87400', weight: 700 });
+    // 黄色区
+    mk('rect', { x: 60, y: 74, width: 590, height: 242, rx: 24, fill: '#fff8d6', stroke: '#f4b400', 'stroke-width': 3 }, topCard);
+    T(topCard, '黄色 Yellow', { x: 355, y: 110, size: 26, fill: '#996200', weight: 700, anchor: 'middle' });
+    // 跳绳 + 铲子
+    const rope = G(topCard, { x: 210, y: 210, o: 0, s: 0.7 });
+    mk('path', { d: 'M-50 -20 C-60 40 60 40 50 -20 C40 -60 -40 -60 -50 -20 Z', fill: 'none', stroke: '#f4b400', 'stroke-width': 10 }, rope);
+    mk('rect', { x: -64, y: -34, width: 16, height: 34, rx: 6, fill: '#e09f00' }, rope);
+    mk('rect', { x: 48, y: -34, width: 16, height: 34, rx: 6, fill: '#e09f00' }, rope);
+    T(rope, '跳绳', { x: 0, y: 74, size: 22, fill: '#665c50', weight: 700, anchor: 'middle' });
+    tw(rope, { o: 1, s: 1 }, m('g_col', 1.2), 0.4, back);
+
+    const shovel = G(topCard, { x: 490, y: 210, o: 0, s: 0.7 });
+    mk('rect', { x: -8, y: -48, width: 16, height: 56, rx: 6, fill: '#ffd60a', stroke: '#b88600', 'stroke-width': 2.5 }, shovel);
+    mk('path', { d: 'M-26 4 H26 L20 46 Q0 58 -20 46 Z', fill: '#ffd60a', stroke: '#b88600', 'stroke-width': 2.5 }, shovel);
+    T(shovel, '小铲子', { x: 0, y: 74, size: 22, fill: '#665c50', weight: 700, anchor: 'middle' });
+    tw(shovel, { o: 1, s: 1 }, m('g_col', 2.0), 0.4, back);
+
+    // 红色区
+    mk('rect', { x: 760, y: 74, width: 590, height: 242, rx: 24, fill: '#ffeef0', stroke: '#ff5a5f', 'stroke-width': 3 }, topCard);
+    T(topCard, '红色 Red', { x: 1055, y: 110, size: 26, fill: '#b8252b', weight: 700, anchor: 'middle' });
+    const bucket = G(topCard, { x: 920, y: 210, o: 0, s: 0.7 });
+    mk('path', { d: 'M-42 -26 H42 L32 42 H-32 Z', fill: '#e63946', stroke: '#2b241d', 'stroke-width': 3 }, bucket);
+    mk('path', { d: 'M-42 -26 Q0 -64 42 -26', fill: 'none', stroke: '#2b241d', 'stroke-width': 4 }, bucket);
+    T(bucket, '水桶', { x: 0, y: 74, size: 22, fill: '#665c50', weight: 700, anchor: 'middle' });
+    tw(bucket, { o: 1, s: 1 }, m('g_col', 3.4), 0.4, back);
+
+    const pin = G(topCard, { x: 1190, y: 210, o: 0, s: 0.7 });
+    mk('path', { d: 'M-14 -48 C-14 -58 14 -58 14 -48 L10 -22 C24 -6 24 28 16 44 H-16 C-24 28 -24 -6 -10 -22 Z', fill: '#e63946', stroke: '#2b241d', 'stroke-width': 3 }, pin);
+    T(pin, '保龄球瓶', { x: 0, y: 74, size: 22, fill: '#665c50', weight: 700, anchor: 'middle' });
+    tw(pin, { o: 1, s: 1 }, m('g_col', 4.3), 0.4, back);
+    sfx('grouping', m('g_col', 1.2), 'whoosh', 0.45);
+
+    // 下半区：按形状分类
+    const botCard = sc_panelCard(p, 90, 490, 1420, 330, { fill: 'rgba(255,253,247,0.92)', stroke: '#a8e0c2', sw: 4 });
+    T(botCard, '2. 根据形状分类 · Group by shape', { x: 36, y: 46, size: 28, fill: '#1b7a4c', weight: 700 });
+    // 圆形篮子
+    mk('rect', { x: 60, y: 74, width: 590, height: 228, rx: 24, fill: '#eefbf3', stroke: '#2bb673', 'stroke-width': 3 }, botCard);
+    T(botCard, '圆形 Round', { x: 355, y: 110, size: 26, fill: '#1b7a4c', weight: 700, anchor: 'middle' });
+    const ball = G(botCard, { x: 215, y: 198, o: 0, s: 0.7 });
+    mk('circle', { cx: 0, cy: 0, r: 42, fill: '#c8e636', stroke: '#2b241d', 'stroke-width': 3 }, ball);
+    mk('path', { d: 'M-28 -30 Q0 0 -28 30 M28 -30 Q0 0 28 30', fill: 'none', stroke: '#ffffff', 'stroke-width': 4 }, ball);
+    T(ball, '网球', { x: 0, y: 68, size: 22, fill: '#665c50', weight: 700, anchor: 'middle' });
+    tw(ball, { o: 1, s: 1 }, m('g_shp', 1.2), 0.4, back);
+
+    const marble = G(botCard, { x: 490, y: 198, o: 0, s: 0.7 });
+    mk('circle', { cx: 0, cy: 0, r: 36, fill: '#274c9b', stroke: '#2b241d', 'stroke-width': 3 }, marble);
+    mk('path', { d: 'M-16 -20 Q6 0 -10 22', fill: 'none', stroke: '#8ecae6', 'stroke-width': 7, 'stroke-linecap': 'round' }, marble);
+    T(marble, '弹珠', { x: 0, y: 68, size: 22, fill: '#665c50', weight: 700, anchor: 'middle' });
+    tw(marble, { o: 1, s: 1 }, m('g_shp', 2.0), 0.4, back);
+
+    // 方形篮子
+    mk('rect', { x: 760, y: 74, width: 590, height: 228, rx: 24, fill: '#eef6ff', stroke: '#2d7dd2', 'stroke-width': 3 }, botCard);
+    T(botCard, '方形 Square', { x: 1055, y: 110, size: 26, fill: '#1b5fa8', weight: 700, anchor: 'middle' });
+    const chess = G(botCard, { x: 920, y: 198, o: 0, s: 0.7 });
+    mk('rect', { x: -42, y: -42, width: 84, height: 84, rx: 6, fill: '#ffffff', stroke: '#2b241d', 'stroke-width': 3 }, chess);
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) if ((r + c) % 2 === 0) mk('rect', { x: -42 + c * 21, y: -42 + r * 21, width: 21, height: 21, fill: '#2b241d' }, chess);
+    T(chess, '棋盘', { x: 0, y: 68, size: 22, fill: '#665c50', weight: 700, anchor: 'middle' });
+    tw(chess, { o: 1, s: 1 }, m('g_shp', 3.4), 0.4, back);
+
+    const hankie = G(botCard, { x: 1190, y: 198, o: 0, s: 0.7 });
+    mk('rect', { x: -40, y: -40, width: 80, height: 80, rx: 8, fill: '#ffcad4', stroke: '#d6336c', 'stroke-width': 3 }, hankie);
+    mk('path', { d: 'M-40 -12 H40 M-40 12 H40 M-12 -40 V40 M12 -40 V40', stroke: '#ffbe0b', 'stroke-width': 5, opacity: 0.75 }, hankie);
+    T(hankie, '小手帕', { x: 0, y: 68, size: 22, fill: '#665c50', weight: 700, anchor: 'middle' });
+    tw(hankie, { o: 1, s: 1 }, m('g_shp', 4.2), 0.4, back);
+    sfx('grouping', m('g_shp', 1.2), 'boing', 0.45);
+  }, { lead: false }],
+
+  /* 8. 影子大挑战（支持触摸/鼠标拖拉积木拼入黑色影子 + 轻点自动飞入） */
+  ['hots_shadow', '思维挑战 · 影子拼图', (m) => {
+    const p = panel(0);
+    sc_bg(p, 'bg_shadow_stage.jpg', 0.14);
+    sc_badge(p, '思维挑战 · 影子拼图', 84, 62, '#ff9f1c', 0.1);
+
+    const board = sc_panelCard(p, 80, 115, 800, 720, { fill: 'rgba(255,253,247,0.94)', stroke: '#ffd166', sw: 5, rx: 32 });
+    T(board, '拖动下方积木，拼进黑色影子里！', { x: 400, y: 46, size: 28, fill: '#2b241d', weight: 700, anchor: 'middle' });
+    mk('path', { d: 'M36 338 H764', stroke: '#ead9bc', 'stroke-width': 3, 'stroke-dasharray': '10 8' }, board);
+
+    // 黑色小车目标影子（与可拖拉积木保持 1:1 精确尺寸，舞台坐标）
+    const shadow = G(p, { x: 0, y: 0, o: 0 });
+    mk('polygon', { points: '480,176 344,256 616,256', fill: '#181818' }, shadow);
+    mk('rect', { x: 344, y: 254, width: 272, height: 104, rx: 4, fill: '#181818' }, shadow);
+    mk('circle', { cx: 408, cy: 374, r: 34, fill: '#181818' }, shadow);
+    mk('circle', { cx: 552, cy: 374, r: 34, fill: '#181818' }, shadow);
+    show(shadow, 0.25, 0.4);
+
+    // 静态预览积木托盘（进入互动问答时隐藏，由 qlayer 接管拖拉交互）
+    const tray = G(p, { x: 0, y: 0, o: 0 });
+    S.shadowTray = tray;
+    const drawTri = (par) => mk('polygon', { points: '0,-56 -136,24 136,24', fill: '#7b2cbf', stroke: '#2b241d', 'stroke-width': 3.5, 'stroke-linejoin': 'round' }, par);
+    const drawRect = (par) => mk('rect', { x: -136, y: -52, width: 272, height: 104, rx: 6, fill: '#ff851b', stroke: '#2b241d', 'stroke-width': 3.5 }, par);
+    const drawCir = (par) => mk('circle', { cx: 0, cy: 0, r: 34, fill: '#ffd60a', stroke: '#2b241d', 'stroke-width': 3.5 }, par);
+    const drawSq = (par) => mk('rect', { x: -52, y: -52, width: 104, height: 104, rx: 6, fill: '#8ac926', stroke: '#2b241d', 'stroke-width': 3.5 }, par);
+
+    const previewSpecs = [
+      [drawTri, 270, 565, '紫色三角形', '#7b2cbf', 54],
+      [drawRect, 665, 565, '橙色长方形', '#c85a00', 78],
+      [drawCir, 210, 735, '黄色圆形 1', '#b88600', 60],
+      [drawSq, 480, 735, '绿色正方形', '#4f772d', 78],
+      [drawCir, 745, 735, '黄色圆形 2', '#b88600', 60],
+    ];
+    previewSpecs.forEach(([fn, px, py, lbl, lcol, ly]) => {
+      const g = G(tray, { x: px, y: py });
+      fn(g);
+      T(g, lbl, { x: 0, y: ly, size: 22, fill: lcol, weight: 700, anchor: 'middle' });
+    });
+    show(tray, 0.45, 0.4);
+    void board;
+  }, {
+    lead: false,
+    hold: 2.0,
+    ask: done => quiz({ x: 915, y: 175, w: 605, cls: 'side' }, [{
+      id: 'c-hots-drag',
+      prompt: ['把左边正确的积木拖进黑色影子里，拼出小屋子车！'],
+      build: (body, api) => {
+        if (S.shadowTray) S.shadowTray.style.display = 'none';
+        const L = qlayer();
+        const progEl = h('div', 'sc-progress', '已拼好 0 / 4 块 · 拖动积木到黑影上，或轻点积木自动飞入');
+        body.append(progEl);
+
+        const stage = $('stage');
+        const pt = e => {
+          const r = stage.getBoundingClientRect();
+          return [(e.clientX - r.left) * SW / r.width, (e.clientY - r.top) * SH / r.height];
+        };
+
+        const SLOTS = {
+          roof: { x: 480, y: 232, filled: null },
+          body: { x: 480, y: 306, filled: null },
+          wheelL: { x: 408, y: 374, filled: null },
+          wheelR: { x: 552, y: 374, filled: null },
+        };
+
+        const pieceDefs = [
+          {
+            id: 'tri', kind: 'triangle', label: '紫色三角形', lblCol: '#7b2cbf', lblY: 54, home: [270, 565], targets: ['roof'],
+            draw: g => mk('polygon', { points: '0,-56 -136,24 136,24', fill: '#7b2cbf', stroke: '#2b241d', 'stroke-width': 3.5, 'stroke-linejoin': 'round' }, g),
+          },
+          {
+            id: 'rect', kind: 'rectangle', label: '橙色长方形', lblCol: '#c85a00', lblY: 78, home: [665, 565], targets: ['body'],
+            draw: g => mk('rect', { x: -136, y: -52, width: 272, height: 104, rx: 6, fill: '#ff851b', stroke: '#2b241d', 'stroke-width': 3.5 }, g),
+          },
+          {
+            id: 'cir1', kind: 'circle', label: '黄色圆形 1', lblCol: '#b88600', lblY: 60, home: [210, 735], targets: ['wheelL', 'wheelR'],
+            draw: g => mk('circle', { cx: 0, cy: 0, r: 34, fill: '#ffd60a', stroke: '#2b241d', 'stroke-width': 3.5 }, g),
+          },
+          {
+            id: 'sq', kind: 'square', label: '绿色正方形', lblCol: '#4f772d', lblY: 78, home: [480, 735], targets: [],
+            draw: g => mk('rect', { x: -52, y: -52, width: 104, height: 104, rx: 6, fill: '#8ac926', stroke: '#2b241d', 'stroke-width': 3.5 }, g),
+          },
+          {
+            id: 'cir2', kind: 'circle', label: '黄色圆形 2', lblCol: '#b88600', lblY: 60, home: [745, 735], targets: ['wheelL', 'wheelR'],
+            draw: g => mk('circle', { cx: 0, cy: 0, r: 34, fill: '#ffd60a', stroke: '#2b241d', 'stroke-width': 3.5 }, g),
+          },
+        ];
+
+        let locked = false, placedCount = 0;
+        const nodes = [];
+
+        const checkDone = () => {
+          progEl.textContent = `已拼好 ${placedCount} / 4 块` + (placedCount < 4 ? ' · 继续加油！' : ' · 小屋子车拼成啦！');
+          if (placedCount === 4) {
+            const smile = G(L, { x: 480, y: 306, o: 0, s: 0.6 });
+            mk('circle', { cx: -32, cy: -10, r: 8, fill: '#2b241d' }, smile);
+            mk('circle', { cx: 32, cy: -10, r: 8, fill: '#2b241d' }, smile);
+            mk('circle', { cx: -29, cy: -13, r: 3, fill: '#ffffff' }, smile);
+            mk('circle', { cx: 35, cy: -13, r: 3, fill: '#ffffff' }, smile);
+            mk('path', { d: 'M-22 14 Q0 34 22 14', fill: 'none', stroke: '#2b241d', 'stroke-width': 5, 'stroke-linecap': 'round' }, smile);
+            fx(smile, { o: 1, s: 1 }, 0.1, 0.35, back);
+            sc_playSfx('applause', 0.55);
+            api.grade(true, '太棒了！紫色三角形做屋顶，橙色长方形做车身，两个黄色圆形做轮子，绿色正方形没有用到！');
+          }
+        };
+
+        const snapToSlot = (item, slotKey) => {
+          if (item.placed) return;
+          const slot = SLOTS[slotKey];
+          slot.filled = item;
+          item.placed = slotKey;
+          placedCount++;
+          put(item.lbl, { o: 0 });
+          fx(item.g, { x: slot.x, y: slot.y, s: 1 }, 0, 0.28, back);
+          sc_playSfx('chime', 0.6);
+          checkDone();
+        };
+
+        const tryPlace = (item, x, y, tapMode = false) => {
+          if (locked || item.placed) return;
+          const inShadowZone = tapMode || (x >= 260 && x <= 700 && y >= 135 && y <= 440);
+          if (!inShadowZone) {
+            fx(item.g, { x: item.home[0], y: item.home[1] }, 0, 0.25, out);
+            return;
+          }
+          if (!item.targets.length) {
+            sc_playSfx('boing', 0.55);
+            fx(item.g, { x: item.home[0], y: item.home[1] }, 0, 0.28, out);
+            shakeFx(item.g);
+            api.grade(false, '绿色正方形太窄啦，放不进宽宽的车身！试试把橙色长方形拖上去吧。');
+            return;
+          }
+          // 选距离最近且未被占用的目标槽位
+          const openKeys = item.targets.filter(k => !SLOTS[k].filled);
+          if (!openKeys.length) {
+            fx(item.g, { x: item.home[0], y: item.home[1] }, 0, 0.25, out);
+            return;
+          }
+          openKeys.sort((a, b) => Math.hypot(x - SLOTS[a].x, y - SLOTS[a].y) - Math.hypot(x - SLOTS[b].x, y - SLOTS[b].y));
+          snapToSlot(item, openKeys[0]);
+        };
+
+        pieceDefs.forEach((def, idx) => {
+          const g = G(L, { x: def.home[0], y: def.home[1] });
+          g.classList.add('sc-drag');
+          g.setAttribute('tabindex', '0');
+          g.setAttribute('role', 'button');
+          g.setAttribute('aria-label', def.label);
+          def.draw(g);
+          const lbl = T(g, def.label, { x: 0, y: def.lblY, size: 22, fill: def.lblCol, weight: 700, anchor: 'middle' });
+          const item = { ...def, g, lbl, placed: null };
+          nodes.push(item);
+
+          let drag = null;
+          g.addEventListener('pointerdown', e => {
+            if (locked || item.placed) return;
+            e.preventDefault();
+            const p0 = pt(e);
+            drag = { dx: p0[0] - st(g).x, dy: p0[1] - st(g).y, sx: p0[0], sy: p0[1], moved: false };
+            L.append(g); // 先提升层级再捕获指针
+            g.setPointerCapture(e.pointerId);
+          });
+          g.addEventListener('pointermove', e => {
+            if (!drag) return;
+            const p0 = pt(e);
+            if (Math.hypot(p0[0] - drag.sx, p0[1] - drag.sy) > 8) drag.moved = true;
+            if (drag.moved) put(g, { x: p0[0] - drag.dx, y: p0[1] - drag.dy });
+          });
+          const endDrag = () => {
+            if (!drag) return;
+            const wasMoved = drag.moved;
+            drag = null;
+            if (wasMoved) tryPlace(item, st(g).x, st(g).y, false);
+            else tryPlace(item, st(g).x, st(g).y, true);
+          };
+          g.addEventListener('pointerup', endDrag);
+          g.addEventListener('lostpointercapture', endDrag);
+          keyAct(g, () => tryPlace(item, def.home[0], def.home[1], true));
+        });
+
+        return {
+          hint: [kbd('1–5'), ' 放置积木 · 或直接拖进黑影'],
+          reveal() {
+            nodes.forEach(item => {
+              if (!item.placed && item.targets.length) {
+                const openKey = item.targets.find(k => !SLOTS[k].filled);
+                if (openKey) snapToSlot(item, openKey);
+              }
+            });
+            return '紫色三角形 + 橙色长方形 + 两个黄色圆形组成小屋子车！';
+          },
+          lock() { locked = true; nodes.forEach(n => { n.g.style.cursor = 'default'; }); },
+          key(e) {
+            const idx = +e.key - 1;
+            if (idx >= 0 && idx < nodes.length) {
+              const it = nodes[idx];
+              tryPlace(it, it.home[0], it.home[1], true);
+              return true;
+            }
+            return false;
+          },
+        };
+      },
+    }], done, 'HOTS 影子拼图'),
+  }],
+
+  /* 9. 通关庆祝结尾 */
+  ['outro', '通关成功！', (m, D) => {
+    const p = panel(0);
+    sc_bg(p, 'bg_playroom.jpg', 0.2);
+    sfx('outro', 0.15, 'applause', 0.45);
+    sfx('outro', 0.2, 'chime', 0.5);
+
+    sc_badge(p, '通关成功 · 小科学家真棒！', 84, 64, '#2bb673', 0.1);
+    const exp = sc_explorer(p, 330, 515, { s: 1.45 });
+
+    const wins = [
+      ['o1', '认识九种颜色（中英双语）', '#ff5a5f', 0, 'dot'],
+      ['o2', '蓝+红=紫 · 黄+蓝=绿', '#9d4edd', 1, 'star'],
+      ['o3', '分辨 3D 立体与 2D 平面形状', '#19a7e0', 2, 'tri'],
+      ['o4', '按颜色与形状分类 · 影子拼图', '#2bb673', 3, 'sq'],
+    ];
+    wins.forEach(([mkName, txt, col, idx, icon]) => {
+      const card = G(p, { x: 640, y: 205 + idx * 145, o: 0, s: 0.88 });
+      mk('rect', { x: 0, y: -48, width: 780, height: 108, rx: 28, fill: 'rgba(255,255,255,0.95)', stroke: col, 'stroke-width': 4 }, card);
+      if (icon === 'dot') mk('circle', { cx: 48, cy: 6, r: 16, fill: col }, card);
+      else if (icon === 'star') mk('polygon', { points: '48,-12 54,0 66,0 56,8 60,20 48,13 36,20 40,8 30,0 42,0', fill: col }, card);
+      else if (icon === 'tri') mk('polygon', { points: '48,-12 32,18 64,18', fill: col }, card);
+      else mk('rect', { x: 34, y: -8, width: 28, height: 28, rx: 5, fill: col }, card);
+      T(card, txt, { x: 86, y: 16, size: 34, fill: '#2b241d', weight: 700 });
+      tw(card, { o: 1, s: 1 }, m(mkName), 0.35, back);
+    });
+
+    clockRun(t => {
+      put(exp.armR, { r: -120 + 20 * Math.sin(t * 8) });
+      put(exp.root, { y: 515 - Math.abs(12 * Math.sin(t * 4)) });
+      put(exp.eyeL, { s: (t % 3.0 > 2.85) ? 0.15 : 1 });
+      put(exp.eyeR, { s: (t % 3.0 > 2.85) ? 0.15 : 1 });
+    }, D, { tail: true });
+  }, { lead: false }],
+].map(([id, title, run, extra]) => ({ id, title, run, ...extra }));
+
+/* ---------- 欢快儿童背景配乐（人声下自动压低 -16 dB） ---------- */
+window.MUSIC_LEVELS = { under: -16, open: -8 };
+music('audio/bgm/playtime.mp3', ['intro', 'colours', 'mixing_demo', 'mixing_quiz', 'shapes', 'shape_find', 'grouping', 'hots_shadow', 'outro'], 0.34);
+
+boot();
+</script>
+</body>
+</html>

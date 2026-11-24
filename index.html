@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>趣味科学小课堂 · 游戏时间到！</title>
+<meta name="description" content="5 岁儿童趣味科学启蒙互动动画《游戏时间到！It's Playtime!》：认识颜色、混色魔法、立体与平面形状、物体分类与影子拼图挑战。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23ff5a5f'/%3E%3Ccircle cx='24' cy='26' r='10' fill='%23ffd93d'/%3E%3Cpolygon points='44,16 54,36 34,36' fill='%234cc9f0'/%3E%3Crect x='22' y='40' width='20' height='14' rx='4' fill='%236bcb77'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="lib/units.css">
+<link rel="stylesheet" href="lib/contents.css">
+<script src="lib/units.js"></script>
+<script src="lib/contents.js"></script>
+<script src="unit-art.js"></script>
+<link rel="expect" href="#ch01" blocking="render">
+<style>
+:root {
+  --ui: "PingFang SC", "Hiragino Sans GB", "HarmonyOS Sans SC", "MiSans", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --page: #fff6e5; --board: #fffdf7; --panel: #ffffff; --edge: #f0dec0;
+  --chalk: #2b241d; --dim: #665c50; --faint: #a89d8e;
+  --task: #ff5a5f; --quiz: #2d7dd2; --good: #2bb673;
+  --top-bg: rgba(255, 253, 247, .92); --top-line: #f0dec0;
+  --lift: rgba(90, 60, 20, .15); color-scheme: light;
+}
+body::before { background: none; }
+</style>
+</head>
+<body>
+<section id="cover">
+  <div class="chalk" aria-hidden="true">
+    <span style="left:7%;top:13%;--d:1.6">红 + 黄 = 橙？</span>
+    <span style="right:8%;top:17%;--d:1.9">立体 &amp; 平面形状</span>
+    <span style="left:6%;bottom:20%;--d:2.2">Colours &amp; Shapes</span>
+    <span style="right:6%;bottom:15%;--d:2.5">影子大挑战 HOTS</span>
+  </div>
+  <svg class="mascot draw" id="guide" width="210" height="147" aria-hidden="true"></svg>
+  <h1>趣味科学小课堂</h1>
+  <p class="kicker">5 岁科学启蒙互动动画</p>
+  <p class="lede">游戏时间到！It's Playtime! 跟着小探险家一起玩颜色混色魔法、听音找形状朋友、玩具分类和影子拼图。</p>
+  <div class="acts">
+    <a class="btn go" href="#contents" data-t="open">开始探索<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2.5 11.5 8 6 13.5 4.6 12.1 8.7 8 4.6 3.9z"/></svg></a>
+    <a class="btn quiet" id="resume" hidden></a>
+  </div>
+  <p class="meta" id="meta"></p>
+</section>
+
+<main id="contents">
+  <header class="top">
+    <a class="home" href="#book" aria-label="返回封面" data-t-label="toCover"><svg class="mascot" id="guideSmall" width="52" height="36" aria-hidden="true"></svg><strong>趣味科学小课堂</strong></a>
+    <span class="prog" id="prog"></span>
+  </header>
+  <div id="units"></div>
+  <p class="refs-more" id="refsMore" hidden><a href="#references"><b data-t="references">参考资料</b><span id="refsCount"></span><i data-t="viewAll">查看全部 →</i></a></p>
+</main>
+
+<main id="refpage" aria-labelledby="refsTitle">
+  <header class="top">
+    <a class="back" href="#contents" data-t="backToContents">← 目录</a>
+    <span class="rp-book" id="rpBook"></span>
+  </header>
+  <section class="refs" id="references">
+    <h1 id="refsTitle" tabindex="-1" data-t="references">参考资料</h1>
+    <p class="lead" data-t="refsLead">课程中所引用的资料。</p>
+    <ol id="refList"></ol>
+  </section>
+</main>
+
+<script>
+Contents.book({
+  start: { unit: 1, chapter: 1 },
+  units: [
+    ['游戏时间到！It\'s Playtime!', [['颜色 · 混色魔法 · 形状 · 分类 · 影子拼图', 4]]],
+  ],
+  hues: ['#ff5a5f', '#2d7dd2', '#2bb673', '#ffbe0b', '#9b59b6'],
+});
+</script>
+</body>
+</html>
