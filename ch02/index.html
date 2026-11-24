@@ -632,13 +632,47 @@ const BEATS = [
 
     const cardA = u2_card(p, 85, 145, 385, 635, { fill: 'rgba(255,253,247,0.95)', stroke: '#94a3b8', sw: 4.5, rx: 30 });
     T(cardA, '图 A · 捂住鼻子', { x: 192, y: 54, size: 28, fill: '#475569', weight: 800, anchor: 'middle' });
-    const { inst: instA } = Doudou.createFacePortrait(cardA, {
+    const { wrap: wrapA, inst: instA } = Doudou.createFacePortrait(cardA, {
       x: 192, y: 245, r: 122, bg: '#f8fafc', frameColor: '#94a3b8', showFrame: true,
       hat: false, scarf: false, eyeColor: 'brown', expr: 'curious',
     });
-    // 捂住鼻子的小手遮罩图形
-    mk('ellipse', { cx: 192, cy: 256, rx: 28, ry: 18, fill: '#ffd5b6', stroke: '#5a3b2c', 'stroke-width': 3 }, cardA);
-    mk('path', { d: 'M180,256 H204', stroke: '#c97a55', 'stroke-width': 2.5, 'stroke-linecap': 'round' }, cardA);
+    // 从右下方伸上来的小手臂 + 拇指与食指捏住鼻子（裁剪在圆镜内、位于边框之下）
+    const pinchLayer = wrapA.querySelector('[clip-path]') || wrapA;
+    const pinchArm = G(pinchLayer, { x: 0, y: 0 });
+    // 奶油色短袖边 + 弯曲前臂
+    mk('path', {
+      d: 'M52,126 C40,94 28,68 18,48 L36,42 C48,64 62,90 76,120 Z',
+      fill: 'url(#dd-skin)', stroke: '#5a3b2c', 'stroke-width': 2.8, 'stroke-linejoin': 'round',
+    }, pinchArm);
+    mk('path', {
+      d: 'M46,124 C56,112 68,108 78,116 L72,130 L48,132 Z',
+      fill: 'url(#dd-shirt)', stroke: '#5a3b2c', 'stroke-width': 2.6, 'stroke-linejoin': 'round',
+    }, pinchArm);
+    // 手掌与蜷曲的无名指/小指/中指 + 拇指和食指捏住鼻尖 (0, 19)
+    mk('path', {
+      d: 'M12,48 C6,42 5,32 10,27 C15,23 22,26 26,31 C33,31 38,36 37,43 C39,47 36,53 29,55 C21,57 14,54 12,48 Z',
+      fill: 'url(#dd-skin)', stroke: '#5a3b2c', 'stroke-width': 2.8, 'stroke-linejoin': 'round',
+    }, pinchArm);
+    // 左侧拇指从左下方捏向鼻尖
+    mk('path', {
+      d: 'M10,36 C-4,35 -12,26 -10,18 C-8,12 0,13 3,20 C6,26 12,28 16,30',
+      fill: 'url(#dd-skin)', stroke: '#5a3b2c', 'stroke-width': 2.8, 'stroke-linecap': 'round', 'stroke-linejoin': 'round',
+    }, pinchArm);
+    // 右侧食指从右方捏向鼻尖，与拇指夹住鼻子
+    mk('path', {
+      d: 'M20,30 C16,20 12,13 5,15 C0,17 1,24 8,28 C12,30 16,33 19,36',
+      fill: 'url(#dd-skin)', stroke: '#5a3b2c', 'stroke-width': 2.8, 'stroke-linecap': 'round', 'stroke-linejoin': 'round',
+    }, pinchArm);
+    // 蜷曲的三根手指轮廓弧线
+    mk('path', {
+      d: 'M21,36 C25,35 29,38 27,43 M25,43 C29,42 32,46 29,50',
+      fill: 'none', stroke: '#c98863', 'stroke-width': 2, 'stroke-linecap': 'round',
+    }, pinchArm);
+    // 捏鼻子的微压动作线
+    mk('path', {
+      d: 'M-15,15 Q-18,20 -15,25 M16,13 Q19,18 16,23',
+      fill: 'none', stroke: '#e07a5f', 'stroke-width': 2.2, 'stroke-linecap': 'round',
+    }, pinchArm);
     // 下方花朵
     for (let a = 0; a < 5; a++) {
       const r = a * 72 * Math.PI / 180;
