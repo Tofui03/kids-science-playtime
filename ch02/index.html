@@ -1,0 +1,974 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>我的家人 My Family · 趣味科学小课堂</title>
+<link rel="stylesheet" href="../lib/engine.css">
+<link rel="expect" href="#bar" blocking="render">
+</head>
+<body>
+<script src="../lib/engine.js"></script>
+<script src="../lib/doudou.js"></script>
+<script src="audio/zh/timings.js"></script>
+<script>
+'use strict';
+const CHAPTER = { number: 2, title: '我的家人 My Family', minutes: 6, language: 'zh', film: true, questionKeys: false };
+try { if (localStorage.getItem('captions') === null) setCaptions(true, false); } catch {}
+
+/* ---------- Unit 2 绘本舞台助手（u2_ 前缀避免全局冲突） ---------- */
+function u2_bg(p, imgName, veil = 0.2) {
+  mk('image', { href: `../img/${imgName}`, x: 0, y: 0, width: 1600, height: 900, preserveAspectRatio: 'xMidYMid slice' }, p);
+  if (veil > 0) mk('rect', { x: 0, y: 0, width: 1600, height: 900, fill: `rgba(255,253,247,${veil})` }, p);
+}
+
+function u2_badge(p, label, x = 80, y = 60, fill = '#ff5a5f', t0 = 0.1) {
+  const g = G(p, { x, y, o: 0 });
+  const w = Math.max(160, label.length * 25 + 54);
+  mk('rect', { x: 4, y: -24, width: w, height: 52, rx: 26, fill: 'rgba(60,40,10,0.14)' }, g);
+  mk('rect', { x: 0, y: -28, width: w, height: 52, rx: 26, fill }, g);
+  T(g, label, { x: w / 2, y: 7, size: 24, fill: '#ffffff', weight: 700, anchor: 'middle' });
+  tw(g, { o: 1 }, t0, 0.3);
+  return g;
+}
+
+function u2_card(p, x, y, w, h, { fill = 'rgba(255,253,247,0.93)', stroke = '#f0dec0', sw = 4, rx = 28 } = {}) {
+  const g = G(p, { x, y });
+  mk('rect', { x: 6, y: 10, width: w, height: h, rx, fill: 'rgba(80,50,20,0.1)' }, g);
+  mk('rect', { x: 0, y: 0, width: w, height: h, rx, fill, stroke, 'stroke-width': sw }, g);
+  return g;
+}
+
+const U2_AUDIO_CACHE = {};
+function u2_playSfx(name, vol = 0.6) {
+  try {
+    const a = U2_AUDIO_CACHE['sfx-' + name] || (U2_AUDIO_CACHE['sfx-' + name] = new Audio(`audio/sfx/${name}.mp3`));
+    a.currentTime = 0;
+    a.volume = vol * +($('volume')?.value ?? 1);
+    a.play().catch(() => {});
+  } catch {}
+}
+
+function u2_playClip(name, vol = 0.92) {
+  try {
+    for (const [k, au] of Object.entries(U2_AUDIO_CACHE)) {
+      if (k.startsWith('zh-')) { au.pause(); au.currentTime = 0; }
+    }
+    const a = U2_AUDIO_CACHE['zh-' + name] || (U2_AUDIO_CACHE['zh-' + name] = new Audio(`audio/zh/${name}.mp3`));
+    a.currentTime = 0;
+    a.volume = vol * +($('volume')?.value ?? 1);
+    a.play().catch(() => {});
+  } catch {}
+}
+
+function u2_swatch(hex) {
+  const sp = h('span', 'sc-swatch');
+  sp.style.background = hex;
+  return sp;
+}
+
+/* ---------- 声音图标（纯 SVG） ---------- */
+function u2_drawSoundArt(par, kind) {
+  if (kind === 'drip') {
+    mk('path', { d: 'M0,-42 C-24,-12 -28,16 -20,30 C-12,42 12,42 20,30 C28,16 24,-12 0,-42 Z', fill: '#38bdf8', stroke: '#2b241d', 'stroke-width': 3 }, par);
+    mk('path', { d: 'M-9,6 C-11,16 -8,24 -2,27', fill: 'none', stroke: '#ffffff', 'stroke-width': 4, 'stroke-linecap': 'round' }, par);
+    mk('ellipse', { cx: 0, cy: 42, rx: 32, ry: 7, fill: 'none', stroke: '#0284c7', 'stroke-width': 2.5 }, par);
+  } else if (kind === 'tick') {
+    mk('circle', { cx: -24, cy: -34, r: 10, fill: '#ffd166', stroke: '#2b241d', 'stroke-width': 2.5 }, par);
+    mk('circle', { cx: 24, cy: -34, r: 10, fill: '#ffd166', stroke: '#2b241d', 'stroke-width': 2.5 }, par);
+    mk('circle', { cx: 0, cy: 0, r: 36, fill: '#fff8dc', stroke: '#2b241d', 'stroke-width': 3 }, par);
+    mk('circle', { cx: 0, cy: 0, r: 28, fill: '#ffffff', stroke: '#f59e0b', 'stroke-width': 2.5 }, par);
+    mk('path', { d: 'M0,0 V-16 M0,0 L12,8', fill: 'none', stroke: '#2b241d', 'stroke-width': 3.5, 'stroke-linecap': 'round' }, par);
+    mk('circle', { cx: 0, cy: 0, r: 3.5, fill: '#ff5a5f' }, par);
+  } else if (kind === 'woof') {
+    // 汪汪叫小狗
+    mk('ellipse', { cx: -26, cy: -8, rx: 12, ry: 22, transform: 'rotate(20 -26 -8)', fill: '#b45309', stroke: '#2b241d', 'stroke-width': 2.6 }, par);
+    mk('ellipse', { cx: 26, cy: -8, rx: 12, ry: 22, transform: 'rotate(-20 26 -8)', fill: '#b45309', stroke: '#2b241d', 'stroke-width': 2.6 }, par);
+    mk('circle', { cx: 0, cy: 0, r: 30, fill: '#f6bd60', stroke: '#2b241d', 'stroke-width': 3 }, par);
+    mk('circle', { cx: -10, cy: -6, r: 4, fill: '#2b241d' }, par);
+    mk('circle', { cx: 10, cy: -6, r: 4, fill: '#2b241d' }, par);
+    mk('ellipse', { cx: 0, cy: 5, rx: 7, ry: 5, fill: '#2b241d' }, par);
+    mk('ellipse', { cx: 0, cy: 19, rx: 8, ry: 9, fill: '#ff5a5f', stroke: '#2b241d', 'stroke-width': 2.2 }, par);
+    mk('path', { d: 'M36,-14 L48,-22 M39,0 L54,0 M36,14 L48,22', stroke: '#ff5a5f', 'stroke-width': 3.5, 'stroke-linecap': 'round' }, par);
+  } else if (kind === 'waa') {
+    // 大声哭闹的喇叭声波
+    mk('path', { d: 'M-34,-12 L-10,-12 L18,-32 V32 L-10,12 L-34,12 Z', fill: '#ff70a6', stroke: '#2b241d', 'stroke-width': 3, 'stroke-linejoin': 'round' }, par);
+    mk('rect', { x: -26, y: 12, width: 10, height: 22, rx: 4, fill: '#334155', stroke: '#2b241d', 'stroke-width': 2.4 }, par);
+    mk('path', { d: 'M28,-16 Q38,0 28,16 M38,-26 Q54,0 38,26', fill: 'none', stroke: '#ff5a5f', 'stroke-width': 4, 'stroke-linecap': 'round' }, par);
+  }
+}
+
+/* ---------- 皮肤触摸物品（纯 SVG） ---------- */
+function u2_drawSkinItem(par, kind) {
+  if (kind === 'teddy') {
+    mk('circle', { cx: -24, cy: -26, r: 12, fill: '#c68b59', stroke: '#2b241d', 'stroke-width': 2.8 }, par);
+    mk('circle', { cx: 24, cy: -26, r: 12, fill: '#c68b59', stroke: '#2b241d', 'stroke-width': 2.8 }, par);
+    mk('circle', { cx: -24, cy: -26, r: 6, fill: '#f3d5b5' }, par);
+    mk('circle', { cx: 24, cy: -26, r: 6, fill: '#f3d5b5' }, par);
+    mk('circle', { cx: 0, cy: 0, r: 34, fill: '#d49a6a', stroke: '#2b241d', 'stroke-width': 3 }, par);
+    mk('ellipse', { cx: 0, cy: 10, rx: 16, ry: 12, fill: '#f7e1c6' }, par);
+    mk('circle', { cx: -11, cy: -6, r: 4, fill: '#2b241d' }, par);
+    mk('circle', { cx: 11, cy: -6, r: 4, fill: '#2b241d' }, par);
+    mk('ellipse', { cx: 0, cy: 6, rx: 6, ry: 4, fill: '#5a3b2c' }, par);
+    mk('path', { d: 'M-7,15 Q0,21 7,15', fill: 'none', stroke: '#5a3b2c', 'stroke-width': 2.5, 'stroke-linecap': 'round' }, par);
+  } else if (kind === 'cactus') {
+    mk('path', { d: 'M-22,16 H22 L16,42 H-16 Z', fill: '#e07a5f', stroke: '#2b241d', 'stroke-width': 2.8, 'stroke-linejoin': 'round' }, par);
+    mk('rect', { x: -26, y: 12, width: 52, height: 10, rx: 4, fill: '#f4a261', stroke: '#2b241d', 'stroke-width': 2.5 }, par);
+    mk('path', { d: 'M-14,12 V-26 C-14,-38 14,-38 14,-26 V12 Z', fill: '#40916c', stroke: '#2b241d', 'stroke-width': 2.8 }, par);
+    mk('path', { d: 'M-14,-2 C-28,-2 -30,-18 -20,-18 C-14,-18 -14,-10 -14,-10', fill: '#52b788', stroke: '#2b241d', 'stroke-width': 2.6 }, par);
+    mk('path', { d: 'M14,-8 C28,-8 30,-24 20,-24 C14,-24 14,-16 14,-16', fill: '#52b788', stroke: '#2b241d', 'stroke-width': 2.6 }, par);
+    // 尖刺
+    mk('path', { d: 'M-16,-24 L-23,-27 M16,-20 L23,-23 M0,-36 V-44 M-14,-8 L-21,-10 M14,2 L21,0', stroke: '#2b241d', 'stroke-width': 2.4, 'stroke-linecap': 'round' }, par);
+  } else if (kind === 'pillow') {
+    mk('path', { d: 'M-36,-22 Q0,-30 36,-22 Q44,0 36,22 Q0,30 -36,22 Q-44,0 -36,-22 Z', fill: '#cdb4db', stroke: '#2b241d', 'stroke-width': 3 }, par);
+    mk('path', { d: 'M-26,-12 Q0,-18 26,-12', fill: 'none', stroke: '#ffffff', 'stroke-width': 4, 'stroke-linecap': 'round', opacity: 0.65 }, par);
+    mk('circle', { cx: -8, cy: 2, r: 3.5, fill: '#5a3b2c' }, par);
+    mk('circle', { cx: 8, cy: 2, r: 3.5, fill: '#5a3b2c' }, par);
+    mk('path', { d: 'M-5,8 Q0,13 5,8', fill: 'none', stroke: '#5a3b2c', 'stroke-width': 2.4, 'stroke-linecap': 'round' }, par);
+  } else if (kind === 'kettle') {
+    mk('path', { d: 'M-24,36 L-18,-10 H18 L24,36 Z', fill: '#ff5a5f', stroke: '#2b241d', 'stroke-width': 3, 'stroke-linejoin': 'round' }, par);
+    mk('path', { d: 'M18,2 L36,-10 L34,12 L20,16', fill: '#ff8589', stroke: '#2b241d', 'stroke-width': 2.6, 'stroke-linejoin': 'round' }, par);
+    mk('path', { d: 'M-16,-10 C-22,-34 22,-34 16,-10', fill: 'none', stroke: '#334155', 'stroke-width': 6, 'stroke-linecap': 'round' }, par);
+    // 滚烫蒸汽
+    mk('path', { d: 'M36,-16 Q42,-28 34,-38 M44,-14 Q50,-26 42,-36', fill: 'none', stroke: '#94a3b8', 'stroke-width': 3, 'stroke-linecap': 'round' }, par);
+  }
+}
+
+/* ---------- 味道食物（纯 SVG） ---------- */
+function u2_drawTasteFood(par, kind) {
+  if (kind === 'sweet') {
+    // 粉红棒棒糖
+    mk('rect', { x: -4, y: 12, width: 8, height: 42, rx: 4, fill: '#ffffff', stroke: '#2b241d', 'stroke-width': 2.6 }, par);
+    mk('circle', { cx: 0, cy: -16, r: 34, fill: '#ff7aa2', stroke: '#2b241d', 'stroke-width': 3 }, par);
+    mk('path', { d: 'M0,-16 C8,-16 12,-24 6,-30 C-4,-38 -20,-28 -18,-14 C-16,4 8,10 20,-2', fill: 'none', stroke: '#ffffff', 'stroke-width': 4.5, 'stroke-linecap': 'round' }, par);
+  } else if (kind === 'sour') {
+    // 黄柠檬片
+    mk('ellipse', { cx: 0, cy: -8, rx: 40, ry: 32, fill: '#ffd60a', stroke: '#2b241d', 'stroke-width': 3 }, par);
+    mk('ellipse', { cx: 0, cy: -8, rx: 30, ry: 23, fill: '#fff3b0', stroke: '#f59e0b', 'stroke-width': 2 }, par);
+    mk('path', { d: 'M-26,-8 H26 M0,-29 V13 M-18,-22 L18,6 M18,-22 L-18,6', stroke: '#f59e0b', 'stroke-width': 2.2 }, par);
+    mk('path', { d: 'M36,16 C32,24 38,30 42,26 C46,22 40,18 36,16 Z', fill: '#ffd60a', stroke: '#2b241d', 'stroke-width': 1.8 }, par);
+  } else if (kind === 'salty') {
+    // 海盐脆饼干
+    mk('rect', { x: -34, y: -38, width: 68, height: 68, rx: 14, fill: '#f4a261', stroke: '#2b241d', 'stroke-width': 3 }, par);
+    mk('rect', { x: -24, y: -28, width: 48, height: 48, rx: 8, fill: '#f9c784' }, par);
+    [[-12,-14],[12,-14],[0,0],[-12,12],[12,12]].forEach(([sx, sy]) => {
+      mk('circle', { cx: sx, cy: sy, r: 3.5, fill: '#ffffff', stroke: '#b45309', 'stroke-width': 1.5 }, par);
+    });
+  } else if (kind === 'bitter') {
+    // 翠绿苦瓜片
+    mk('path', { d: 'M-34,-8 C-38,-28 -18,-40 0,-36 C18,-40 38,-28 34,-8 C38,14 20,28 0,24 C-20,28 -38,14 -34,-8 Z', fill: '#40916c', stroke: '#2b241d', 'stroke-width': 3 }, par);
+    mk('ellipse', { cx: 0, cy: -6, rx: 20, ry: 14, fill: '#b7e4c7', stroke: '#2d6a4f', 'stroke-width': 2 }, par);
+    mk('circle', { cx: -8, cy: -8, r: 3.2, fill: '#d97706' }, par);
+    mk('circle', { cx: 8, cy: -8, r: 3.2, fill: '#d97706' }, par);
+    mk('circle', { cx: 0, cy: -1, r: 3.2, fill: '#d97706' }, par);
+  }
+}
+
+/* ---------- 听味道找一找配置（显式字面量保证 lint 零警告） ---------- */
+let u2TasteThings = [];
+const U2_TASTE_ASKS = [
+  { word: '甜', clip: 'q-sweet', again: 'r-sweet' },
+  { word: '酸', clip: 'q-sour', again: 'r-sour' },
+  { word: '咸', clip: 'q-salty', again: 'r-salty' },
+  { word: '苦', clip: 'q-bitter', again: 'r-bitter' },
+];
+
+/* ---------- 节拍时间线 BEATS ---------- */
+const BEATS = [
+  /* 1. 开场：欢迎来到豆豆的家 */
+  ['u2_intro', '单元 2 · 我的家人 My Family', (m, D) => {
+    const p = panel(0);
+    u2_bg(p, 'bg_u2_livingroom.jpg', 0.16);
+    sfx('u2_intro', 0.2, 'bell', 0.55);
+
+    u2_badge(p, '单元 2 · 我的家人 My Family', 84, 62, '#ff5a5f', 0.1);
+    const titleBox = u2_card(p, 585, 130, 880, 240, { fill: 'rgba(255,255,255,0.94)', stroke: '#ffbe0b', sw: 5, rx: 36 });
+    T(titleBox, '我的家人 · My Family', { x: 440, y: 105, size: 62, fill: '#ff5a5f', weight: 700, anchor: 'middle' });
+    T(titleBox, '跟着豆豆在家探索耳朵、皮肤、鼻子与舌头的超能力！', { x: 440, y: 178, size: 28, fill: '#2d7dd2', weight: 700, anchor: 'middle' });
+    put(titleBox, { o: 0, s: 0.86 }); tw(titleBox, { o: 1, s: 1 }, 0.2, 0.5, back);
+
+    const expWrap = G(p, { x: 350, y: 575, o: 0 });
+    const exp = Doudou.create(expWrap, { x: 0, y: 0, s: 1.6, hat: false, scarf: true, barefoot: false, eyeColor: 'brown', expr: 'happy', armL: 26, armR: -120 });
+    tw(expWrap, { o: 1, y: 520 }, 0.2, 0.6, out);
+
+    const previewCards = [
+      ['m_ear',    '我的耳朵 My ears',   '#2d7dd2', 775,  495],
+      ['m_skin',   '我的皮肤 My skin',   '#2bb673', 1185, 495],
+      ['m_nose',   '我的鼻子 My nose',   '#f77f00', 775,  650],
+      ['m_tongue', '我的舌头 My tongue', '#ff5a5f', 1185, 650],
+    ];
+    previewCards.forEach(([mkName, label, col, tx, ty], idx) => {
+      const b = G(p, { x: tx, y: ty, o: 0, s: 0.82 });
+      mk('rect', { x: -175, y: -44, width: 350, height: 88, rx: 28, fill: '#ffffff', stroke: col, 'stroke-width': 4 }, b);
+      mk('circle', { cx: -125, cy: 0, r: 16, fill: col }, b);
+      T(b, idx + 1, { x: -125, y: 7, size: 20, fill: '#ffffff', weight: 800, anchor: 'middle' });
+      T(b, label, { x: 24, y: 10, size: 27, fill: col, weight: 700, anchor: 'middle' });
+      const tAt = m(mkName);
+      tw(b, { o: 1, s: 1 }, tAt, 0.36, back);
+      sfx('u2_intro', tAt, 'pop', 0.45);
+    });
+
+    clockRun(t => {
+      Doudou.animateIdle(exp, t, { armL: 26, armR: -120 + 18 * Math.sin(t * 6.5) });
+    }, D, { tail: true });
+  }, { lead: false }],
+
+  /* 2. 我的耳朵 My ears（手语科普 + 听声音找柔和声） */
+  ['u2_ears', '我的耳朵 My ears', (m, D) => {
+    const p = panel(0);
+    u2_bg(p, 'bg_u2_livingroom.jpg', 0.16);
+    u2_badge(p, '我的耳朵 My ears', 84, 60, '#2d7dd2', 0.1);
+
+    const board = u2_card(p, 80, 112, 800, 726, { fill: 'rgba(255,253,247,0.95)', stroke: '#90cdf4', sw: 5, rx: 32 });
+    T(board, '把 2 个【柔和的声音 soft】拖给豆豆，或轻点听一听！', { x: 400, y: 44, size: 24, fill: '#2b241d', weight: 700, anchor: 'middle' });
+
+    // 手语科普条
+    const signBar = G(board, { x: 400, y: 92, o: 0 });
+    mk('rect', { x: -355, y: -26, width: 710, height: 52, rx: 22, fill: '#eef6ff', stroke: '#93c5fd', 'stroke-width': 2.5 }, signBar);
+    T(signBar, '小贴士：听不见声音的朋友会用手语交流 · Sign language', { x: 0, y: 8, size: 21, fill: '#1d4ed8', weight: 700, anchor: 'middle' });
+    tw(signBar, { o: 1 }, m('e_sign'), 0.35);
+
+    mk('rect', { x: 250, y: 136, width: 300, height: 325, rx: 145, fill: '#f2fbff', stroke: '#38bdf8', 'stroke-width': 3.5, 'stroke-dasharray': '10 8' }, board);
+    mk('path', { d: 'M36 520 H764', stroke: '#dbeafe', 'stroke-width': 3, 'stroke-dasharray': '10 8' }, board);
+
+    const expWrap = G(p, { x: 480, y: 405 });
+    const exp = Doudou.create(expWrap, { x: 0, y: 0, s: 1.18, hat: false, scarf: true, eyeColor: 'brown', expr: 'happy', armL: 20, armR: -20 });
+    S.earDoudou = exp;
+
+    const tray = G(p, { x: 0, y: 0, o: 0 });
+    S.earTray = tray;
+    const specs = [
+      ['drip', 180, 710, '水滴 Drip!',  '#0284c7', 's_drip'],
+      ['woof', 380, 710, '小狗 Woof!',  '#d97706', 's_woof'],
+      ['tick', 580, 710, '闹钟 Tick!',  '#059669', 's_tick'],
+      ['waa',  780, 710, '哭闹 Waa!',   '#e11d48', 's_waa'],
+    ];
+    specs.forEach(([kind, sx, sy, lbl, col, mkName]) => {
+      const g = G(tray, { x: sx, y: sy, o: 0, s: 0.78 });
+      mk('rect', { x: -78, y: -56, width: 156, height: 120, rx: 22, fill: '#ffffff', stroke: col, 'stroke-width': 3 }, g);
+      u2_drawSoundArt(g, kind);
+      T(g, lbl, { x: 0, y: 84, size: 20, fill: col, weight: 700, anchor: 'middle' });
+      tw(g, { o: 1, s: 1 }, m(mkName), 0.35, back);
+    });
+    put(tray, { o: 1 });
+
+    clockRun(t => {
+      Doudou.animateIdle(exp, t, { armL: 20, armR: -20 });
+    }, D, { tail: true });
+    void board;
+  }, {
+    lead: false,
+    hold: 1.6,
+    ask: done => quiz({ x: 915, y: 175, w: 605, cls: 'side' }, [{
+      id: 'u2-q-ears',
+      prompt: ['找出 2 个轻轻的【柔和声音 soft】送给小耳朵听一听！'],
+      build: (body, api) => {
+        if (S.earTray) S.earTray.style.display = 'none';
+        const L = qlayer();
+        const progEl = h('div', 'sc-progress', '已找到 0 / 2 个柔和声音 · 轻点卡片还能听声音哦');
+        body.append(progEl);
+
+        const stage = $('stage');
+        const pt = e => {
+          const r = stage.getBoundingClientRect();
+          return [(e.clientX - r.left) * SW / r.width, (e.clientY - r.top) * SH / r.height];
+        };
+
+        const SLOTS = {
+          left:  { x: 335, y: 385, filled: false },
+          right: { x: 625, y: 385, filled: false },
+        };
+
+        const defs = [
+          { id: 'drip', clip: 'w-drip', label: '水滴 Drip!', col: '#0284c7', home: [180, 710], slot: 'left',  soft: true,  hint: '' },
+          { id: 'woof', clip: 'w-woof', label: '小狗 Woof!', col: '#d97706', home: [380, 710], slot: null,    soft: false, hint: '小狗汪汪叫声音很大，是响亮的噪声（loud）哦！' },
+          { id: 'tick', clip: 'w-tick', label: '闹钟 Tick!', col: '#059669', home: [580, 710], slot: 'right', soft: true,  hint: '' },
+          { id: 'waa',  clip: 'w-waa',  label: '哭闹 Waa!',  col: '#e11d48', home: [780, 710], slot: null,    soft: false, hint: '大声哭闹声震耳欲聋，属于噪声（loud）！找轻轻的声音吧。' },
+        ];
+
+        let locked = false, count = 0;
+        const nodes = [];
+
+        const finishEars = () => {
+          progEl.textContent = '已找到 2 / 2 个柔和声音 · 小耳朵听着真舒服！';
+          u2_playSfx('applause', 0.55);
+          if (S.earDoudou) S.earDoudou.setExpr('happy');
+          api.grade(true, '答对了！水滴声和闹钟声都是轻轻的柔和声音（soft），而小狗狂吠和大声哭闹是噪声（loud）！');
+        };
+
+        const snapSoft = item => {
+          if (item.placed) return;
+          item.placed = true;
+          const sl = SLOTS[item.slot];
+          sl.filled = true;
+          count++;
+          fx(item.g, { x: sl.x, y: sl.y, s: 1.04 }, 0, 0.3, back);
+          u2_playSfx('chime', 0.6);
+          if (count === 2) finishEars();
+          else progEl.textContent = '已找到 1 / 2 个柔和声音 · 再找出另一个柔和的声音！';
+        };
+
+        const tryPlace = (item, x, y, tapMode = false) => {
+          if (locked || item.placed) return;
+          u2_playClip(item.clip, 0.9);
+          const inBox = tapMode || (x >= 200 && x <= 760 && y >= 180 && y <= 575);
+          if (!inBox) {
+            fx(item.g, { x: item.home[0], y: item.home[1] }, 0, 0.25, out);
+            return;
+          }
+          if (!item.soft) {
+            u2_playSfx('boing', 0.55);
+            fx(item.g, { x: item.home[0], y: item.home[1] }, 0, 0.28, out);
+            shakeFx(item.g);
+            if (S.earDoudou) {
+              S.earDoudou.setExpr('amazed');
+              setTimeout(() => S.earDoudou?.setExpr('happy'), 1200);
+            }
+            api.grade(false, item.hint);
+            return;
+          }
+          snapSoft(item);
+        };
+
+        defs.forEach(def => {
+          const g = G(L, { x: def.home[0], y: def.home[1] });
+          g.classList.add('sc-drag');
+          g.setAttribute('tabindex', '0');
+          g.setAttribute('role', 'button');
+          g.setAttribute('aria-label', def.label);
+          mk('rect', { x: -78, y: -56, width: 156, height: 120, rx: 22, fill: '#ffffff', stroke: def.col, 'stroke-width': 3 }, g);
+          u2_drawSoundArt(g, def.id);
+          T(g, def.label, { x: 0, y: 84, size: 20, fill: def.col, weight: 700, anchor: 'middle' });
+          const item = { ...def, g, placed: false };
+          nodes.push(item);
+
+          let drag = null;
+          g.addEventListener('pointerdown', e => {
+            if (locked || item.placed) return;
+            e.preventDefault();
+            const p0 = pt(e);
+            drag = { dx: p0[0] - st(g).x, dy: p0[1] - st(g).y, sx: p0[0], sy: p0[1], moved: false };
+            L.append(g);
+            g.setPointerCapture(e.pointerId);
+          });
+          g.addEventListener('pointermove', e => {
+            if (!drag) return;
+            const p0 = pt(e);
+            if (Math.hypot(p0[0] - drag.sx, p0[1] - drag.sy) > 8) drag.moved = true;
+            if (drag.moved) put(g, { x: p0[0] - drag.dx, y: p0[1] - drag.dy });
+          });
+          const endDrag = () => {
+            if (!drag) return;
+            const moved = drag.moved;
+            drag = null;
+            tryPlace(item, st(g).x, st(g).y, !moved);
+          };
+          g.addEventListener('pointerup', endDrag);
+          g.addEventListener('lostpointercapture', endDrag);
+          keyAct(g, () => tryPlace(item, def.home[0], def.home[1], true));
+        });
+
+        return {
+          hint: [kbd('1–4'), ' 选出柔和声音 · 或拖给豆豆'],
+          reveal() {
+            nodes.filter(n => n.soft && !n.placed).forEach(snapSoft);
+            return '水滴声（Drip）和闹钟声（Tick）都是柔和的声音（soft）！';
+          },
+          lock() { locked = true; nodes.forEach(n => { n.g.style.cursor = 'default'; }); },
+          key(e) {
+            const idx = +e.key - 1;
+            if (idx >= 0 && idx < nodes.length) {
+              const it = nodes[idx];
+              tryPlace(it, it.home[0], it.home[1], true);
+              return true;
+            }
+            return false;
+          },
+        };
+      },
+    }], done, '柔和声音挑战'),
+  }],
+
+  /* 3. 我的皮肤 My skin（安全可摸 vs 危险不可摸 4 选 2 拖拉互动） */
+  ['u2_skin_safe', '我的皮肤 My skin · 安全小手', (m, D) => {
+    const p = panel(0);
+    u2_bg(p, 'bg_u2_livingroom.jpg', 0.16);
+    u2_badge(p, '我的皮肤 My skin', 84, 60, '#2bb673', 0.1);
+
+    const board = u2_card(p, 80, 112, 800, 726, { fill: 'rgba(255,253,247,0.95)', stroke: '#a8e6cf', sw: 5, rx: 32 });
+    T(board, '找出 2 样【安全可触摸】的东西送给豆豆，避开危险！', { x: 400, y: 44, size: 24, fill: '#2b241d', weight: 700, anchor: 'middle' });
+
+    const tipBar = G(board, { x: 400, y: 92, o: 0 });
+    mk('rect', { x: -355, y: -26, width: 710, height: 52, rx: 22, fill: '#ecfdf5', stroke: '#6ee7b7', 'stroke-width': 2.5 }, tipBar);
+    T(tipBar, '小游戏：可以让家人朋友在你的手心写字母猜一猜哦！', { x: 0, y: 8, size: 21, fill: '#047857', weight: 700, anchor: 'middle' });
+    tw(tipBar, { o: 1 }, m('sk_trace'), 0.35);
+
+    mk('rect', { x: 250, y: 136, width: 300, height: 325, rx: 145, fill: '#f0fdf4', stroke: '#2bb673', 'stroke-width': 3.5, 'stroke-dasharray': '10 8' }, board);
+    mk('path', { d: 'M36 520 H764', stroke: '#d1fae5', 'stroke-width': 3, 'stroke-dasharray': '10 8' }, board);
+
+    const expWrap = G(p, { x: 480, y: 405 });
+    const exp = Doudou.create(expWrap, { x: 0, y: 0, s: 1.18, hat: false, scarf: false, eyeColor: 'brown', expr: 'happy', armL: 24, armR: -24 });
+    S.skinDoudou = exp;
+
+    const tray = G(p, { x: 0, y: 0, o: 0 });
+    S.skinTray = tray;
+    const specs = [
+      ['teddy',  180, 710, '毛绒熊 Bear',   '#92400e'],
+      ['cactus', 380, 710, '仙人掌 Cactus', '#15803d'],
+      ['pillow', 580, 710, '软枕头 Pillow', '#7e22ce'],
+      ['kettle', 780, 710, '热水壶 Kettle', '#dc2626'],
+    ];
+    specs.forEach(([kind, sx, sy, lbl, col]) => {
+      const g = G(tray, { x: sx, y: sy });
+      mk('rect', { x: -78, y: -56, width: 156, height: 120, rx: 22, fill: '#ffffff', stroke: col, 'stroke-width': 3 }, g);
+      u2_drawSkinItem(g, kind);
+      T(g, lbl, { x: 0, y: 84, size: 20, fill: col, weight: 700, anchor: 'middle' });
+    });
+    show(tray, m('sk_items'), 0.35);
+
+    clockRun(t => {
+      Doudou.animateIdle(exp, t, { armL: 24, armR: -24 });
+    }, D, { tail: true });
+    void board;
+  }, {
+    lead: false,
+    hold: 1.6,
+    ask: done => quiz({ x: 915, y: 175, w: 605, cls: 'side' }, [{
+      id: 'u2-q-skin',
+      prompt: ['哪两样东西【安全、可以触摸】，哪两样有危险？拖动或轻点安全物品！'],
+      build: (body, api) => {
+        if (S.skinTray) S.skinTray.style.display = 'none';
+        const L = qlayer();
+        const progEl = h('div', 'sc-progress', '已找到 0 / 2 样安全物品 · 拖给豆豆或轻点物品');
+        body.append(progEl);
+
+        const stage = $('stage');
+        const pt = e => {
+          const r = stage.getBoundingClientRect();
+          return [(e.clientX - r.left) * SW / r.width, (e.clientY - r.top) * SH / r.height];
+        };
+
+        const SLOTS = {
+          left:  { x: 335, y: 385, filled: false },
+          right: { x: 625, y: 385, filled: false },
+        };
+
+        const defs = [
+          { id: 'teddy',  label: '毛绒熊 Bear',   col: '#92400e', home: [180, 710], slot: 'left',  safe: true,  hint: '' },
+          { id: 'cactus', label: '仙人掌 Cactus', col: '#15803d', home: [380, 710], slot: null,    safe: false, hint: '哎哟！仙人掌长满尖尖的刺，摸了会扎疼小手，危险不可触摸！' },
+          { id: 'pillow', label: '软枕头 Pillow', col: '#7e22ce', home: [580, 710], slot: 'right', safe: true,  hint: '' },
+          { id: 'kettle', label: '热水壶 Kettle', col: '#dc2626', home: [780, 710], slot: null,    safe: false, hint: '好烫好烫！正在冒热气的水壶会烫伤皮肤，千万不能乱摸！' },
+        ];
+
+        let locked = false, count = 0;
+        const nodes = [];
+
+        const finishSafe = () => {
+          progEl.textContent = '已找到 2 / 2 样安全物品 · 小手保护得真棒！';
+          u2_playSfx('applause', 0.55);
+          if (S.skinDoudou) S.skinDoudou.setExpr('happy');
+          api.grade(true, '太聪明了！毛绒小熊和软枕头安全可触摸（safe to touch），仙人掌和热水壶有危险不可以摸！');
+        };
+
+        const snapSafe = item => {
+          if (item.placed) return;
+          item.placed = true;
+          const sl = SLOTS[item.slot];
+          sl.filled = true;
+          count++;
+          fx(item.g, { x: sl.x, y: sl.y, s: 1.04 }, 0, 0.3, back);
+          u2_playSfx('chime', 0.6);
+          if (count === 2) finishSafe();
+          else progEl.textContent = '已找到 1 / 2 样安全物品 · 再找另一样安全物品！';
+        };
+
+        const tryPlace = (item, x, y, tapMode = false) => {
+          if (locked || item.placed) return;
+          const inBox = tapMode || (x >= 200 && x <= 760 && y >= 180 && y <= 575);
+          if (!inBox) {
+            fx(item.g, { x: item.home[0], y: item.home[1] }, 0, 0.25, out);
+            return;
+          }
+          if (!item.safe) {
+            u2_playSfx('boing', 0.55);
+            fx(item.g, { x: item.home[0], y: item.home[1] }, 0, 0.28, out);
+            shakeFx(item.g);
+            if (S.skinDoudou) {
+              S.skinDoudou.setExpr('amazed');
+              setTimeout(() => S.skinDoudou?.setExpr('happy'), 1200);
+            }
+            api.grade(false, item.hint);
+            return;
+          }
+          snapSafe(item);
+        };
+
+        defs.forEach(def => {
+          const g = G(L, { x: def.home[0], y: def.home[1] });
+          g.classList.add('sc-drag');
+          g.setAttribute('tabindex', '0');
+          g.setAttribute('role', 'button');
+          g.setAttribute('aria-label', def.label);
+          mk('rect', { x: -78, y: -56, width: 156, height: 120, rx: 22, fill: '#ffffff', stroke: def.col, 'stroke-width': 3 }, g);
+          u2_drawSkinItem(g, def.id);
+          T(g, def.label, { x: 0, y: 84, size: 20, fill: def.col, weight: 700, anchor: 'middle' });
+          const item = { ...def, g, placed: false };
+          nodes.push(item);
+
+          let drag = null;
+          g.addEventListener('pointerdown', e => {
+            if (locked || item.placed) return;
+            e.preventDefault();
+            const p0 = pt(e);
+            drag = { dx: p0[0] - st(g).x, dy: p0[1] - st(g).y, sx: p0[0], sy: p0[1], moved: false };
+            L.append(g);
+            g.setPointerCapture(e.pointerId);
+          });
+          g.addEventListener('pointermove', e => {
+            if (!drag) return;
+            const p0 = pt(e);
+            if (Math.hypot(p0[0] - drag.sx, p0[1] - drag.sy) > 8) drag.moved = true;
+            if (drag.moved) put(g, { x: p0[0] - drag.dx, y: p0[1] - drag.dy });
+          });
+          const endDrag = () => {
+            if (!drag) return;
+            const moved = drag.moved;
+            drag = null;
+            tryPlace(item, st(g).x, st(g).y, !moved);
+          };
+          g.addEventListener('pointerup', endDrag);
+          g.addEventListener('lostpointercapture', endDrag);
+          keyAct(g, () => tryPlace(item, def.home[0], def.home[1], true));
+        });
+
+        return {
+          hint: [kbd('1–4'), ' 选择安全物品 · 或拖给豆豆'],
+          reveal() {
+            nodes.filter(n => n.safe && !n.placed).forEach(snapSafe);
+            return '毛绒熊和软枕头安全可触摸，仙人掌和热水壶有危险不可以摸！';
+          },
+          lock() { locked = true; nodes.forEach(n => { n.g.style.cursor = 'default'; }); },
+          key(e) {
+            const idx = +e.key - 1;
+            if (idx >= 0 && idx < nodes.length) {
+              const it = nodes[idx];
+              tryPlace(it, it.home[0], it.home[1], true);
+              return true;
+            }
+            return false;
+          },
+        };
+      },
+    }], done, '安全触摸小能手'),
+  }],
+
+  /* 4. 我的鼻子 My nose（香味、臭味与危险烟雾） */
+  ['u2_nose', '我的鼻子 My nose', (m, D) => {
+    const p = panel(0);
+    u2_bg(p, 'bg_u2_kitchen.jpg', 0.2);
+    u2_badge(p, '我的鼻子 My nose', 84, 60, '#f77f00', 0.1);
+    const bar = u2_card(p, 440, 32, 1060, 58, { fill: 'rgba(255,255,255,0.94)', stroke: '#f77f00', sw: 3, rx: 29 });
+    T(bar, '我有一个鼻子，我用鼻子闻气味 · I smell with my nose.', { x: 530, y: 38, size: 25, fill: '#2b241d', weight: 700, anchor: 'middle' });
+
+    const cols = [
+      { mk: 'n_nice',   x: 100, col: '#2bb673', title: '发出香味', en: 'Smell nice',         expr: 'happy',  desc: '鲜花和刚出炉的蛋糕真香！' },
+      { mk: 'n_bad',    x: 580, col: '#f77f00', title: '发出臭味', en: 'Do not smell nice', expr: 'yuck',   desc: '穿脏的臭袜子和垃圾桶好臭！' },
+      { mk: 'n_danger', x: 1060, col: '#ff5a5f', title: '危险气味！', en: 'Warn of danger', expr: 'amazed', desc: '闻到焦糊浓烟快远离并告诉大人！' },
+    ];
+
+    const portraits = [];
+    cols.forEach((c, i) => {
+      const card = u2_card(p, c.x, 128, 440, 706, { fill: 'rgba(255,253,247,0.95)', stroke: c.col, sw: 4.5, rx: 30 });
+      mk('rect', { x: 30, y: 26, width: 380, height: 68, rx: 20, fill: c.col }, card);
+      T(card, `${c.title} · ${c.en}`, { x: 220, y: 69, size: 24, fill: '#ffffff', weight: 700, anchor: 'middle' });
+
+      const { inst } = Doudou.createFacePortrait(card, {
+        x: 220, y: 235, r: 104, bg: '#fff5e4', frameColor: c.col, showFrame: true,
+        hat: false, scarf: false, eyeColor: 'brown', expr: c.expr,
+      });
+      portraits.push({ inst, ph: i * 0.8 });
+
+      const art = G(card, { x: 220, y: 490 });
+      if (c.mk === 'n_nice') {
+        // 粉红鲜花 + 香气波纹
+        for (let a = 0; a < 5; a++) {
+          const rad = a * 72 * Math.PI / 180;
+          mk('circle', { cx: Math.cos(rad) * 28, cy: Math.sin(rad) * 28 - 10, r: 22, fill: '#ff7aa2', stroke: '#2b241d', 'stroke-width': 2.5 }, art);
+        }
+        mk('circle', { cx: 0, cy: -10, r: 16, fill: '#ffd60a', stroke: '#2b241d', 'stroke-width': 2.5 }, art);
+        mk('path', { d: 'M0,28 V76', stroke: '#2bb673', 'stroke-width': 8, 'stroke-linecap': 'round' }, art);
+        mk('path', { d: 'M-48,-52 Q-38,-72 -48,-90 M48,-52 Q58,-72 48,-90', fill: 'none', stroke: '#ff7aa2', 'stroke-width': 3.5, 'stroke-linecap': 'round' }, art);
+      } else if (c.mk === 'n_bad') {
+        // 臭袜子 + 绿色波纹
+        mk('path', { d: 'M-26,-56 H14 V10 C14,34 44,34 46,56 C48,74 16,76 -6,66 C-22,58 -26,38 -26,18 Z', fill: '#a8dadc', stroke: '#2b241d', 'stroke-width': 3, 'stroke-linejoin': 'round' }, art);
+        mk('path', { d: 'M-26,-36 H14 M-26,-16 H14', stroke: '#f77f00', 'stroke-width': 7 }, art);
+        mk('path', { d: 'M-46,-28 Q-58,-52 -42,-74 M52,-10 Q64,-36 48,-60', fill: 'none', stroke: '#84a93c', 'stroke-width': 4, 'stroke-linecap': 'round' }, art);
+      } else {
+        // 烧焦浓烟锅 + 三角警示标
+        mk('rect', { x: -64, y: 20, width: 128, height: 42, rx: 12, fill: '#334155', stroke: '#2b241d', 'stroke-width': 3 }, art);
+        mk('rect', { x: 64, y: 28, width: 42, height: 12, rx: 6, fill: '#1e293b', stroke: '#2b241d', 'stroke-width': 2.5 }, art);
+        mk('path', { d: 'M-26,10 C-44,-14 -14,-34 -30,-56 M10,12 C-8,-18 26,-38 8,-62', fill: 'none', stroke: '#64748b', 'stroke-width': 7, 'stroke-linecap': 'round' }, art);
+        mk('polygon', { points: '0,-98 -28,-48 28,-48', fill: '#ff5a5f', stroke: '#2b241d', 'stroke-width': 3, 'stroke-linejoin': 'round' }, art);
+        T(art, '!', { x: 0, y: -56, size: 28, fill: '#ffffff', weight: 900, anchor: 'middle' });
+      }
+      T(card, c.desc, { x: 220, y: 655, size: 22, fill: '#2b241d', weight: 700, anchor: 'middle' });
+
+      put(card, { o: 0, s: 0.86 });
+      const tAt = m(c.mk);
+      tw(card, { o: 1, s: 1 }, tAt, 0.42, back);
+      sfx('u2_nose', tAt, c.mk === 'n_danger' ? 'bell' : 'pop', 0.48);
+    });
+
+    clockRun(t => {
+      portraits.forEach(({ inst, ph }) => Doudou.animateIdle(inst, t + ph, { armL: 6, armR: -6 }));
+    }, D, { tail: true });
+  }, { lead: false }],
+
+  /* 5. 闻气味小侦探（哪个豆豆能闻到花香 + 气味安全问答） */
+  ['u2_smell_quiz', '闻气味小侦探 Smell Quiz', (m, D) => {
+    const p = panel(0);
+    u2_bg(p, 'bg_u2_kitchen.jpg', 0.18);
+    u2_badge(p, '鼻子小侦探 · 谁能闻到香味？', 84, 60, '#f77f00', 0.1);
+
+    const cardA = u2_card(p, 85, 145, 385, 635, { fill: 'rgba(255,253,247,0.95)', stroke: '#94a3b8', sw: 4.5, rx: 30 });
+    T(cardA, '图 A · 捂住鼻子', { x: 192, y: 54, size: 28, fill: '#475569', weight: 800, anchor: 'middle' });
+    const { inst: instA } = Doudou.createFacePortrait(cardA, {
+      x: 192, y: 245, r: 122, bg: '#f8fafc', frameColor: '#94a3b8', showFrame: true,
+      hat: false, scarf: false, eyeColor: 'brown', expr: 'curious',
+    });
+    // 捂住鼻子的小手遮罩图形
+    mk('ellipse', { cx: 192, cy: 256, rx: 28, ry: 18, fill: '#ffd5b6', stroke: '#5a3b2c', 'stroke-width': 3 }, cardA);
+    mk('path', { d: 'M180,256 H204', stroke: '#c97a55', 'stroke-width': 2.5, 'stroke-linecap': 'round' }, cardA);
+    // 下方花朵
+    for (let a = 0; a < 5; a++) {
+      const r = a * 72 * Math.PI / 180;
+      mk('circle', { cx: 192 + Math.cos(r) * 20, cy: 485 + Math.sin(r) * 20, r: 16, fill: '#ff7aa2', stroke: '#2b241d', 'stroke-width': 2.4 }, cardA);
+    }
+    mk('circle', { cx: 192, cy: 485, r: 12, fill: '#ffd60a', stroke: '#2b241d', 'stroke-width': 2.4 }, cardA);
+    T(cardA, '捏着鼻子闻不到', { x: 192, y: 575, size: 23, fill: '#64748b', weight: 700, anchor: 'middle' });
+
+    const cardB = u2_card(p, 495, 145, 385, 635, { fill: 'rgba(255,253,247,0.95)', stroke: '#2bb673', sw: 4.5, rx: 30 });
+    T(cardB, '图 B · 深呼吸闻花香', { x: 192, y: 54, size: 28, fill: '#15803d', weight: 800, anchor: 'middle' });
+    const { inst: instB } = Doudou.createFacePortrait(cardB, {
+      x: 192, y: 245, r: 122, bg: '#fff8ec', frameColor: '#2bb673', showFrame: true,
+      hat: false, scarf: false, eyeColor: 'brown', expr: 'happy',
+    });
+    for (let a = 0; a < 5; a++) {
+      const r = a * 72 * Math.PI / 180;
+      mk('circle', { cx: 192 + Math.cos(r) * 20, cy: 485 + Math.sin(r) * 20, r: 16, fill: '#ff7aa2', stroke: '#2b241d', 'stroke-width': 2.4 }, cardB);
+    }
+    mk('circle', { cx: 192, cy: 485, r: 12, fill: '#ffd60a', stroke: '#2b241d', 'stroke-width': 2.4 }, cardB);
+    mk('path', { d: 'M172,442 Q160,400 176,365 M212,442 Q224,400 208,365', fill: 'none', stroke: '#ff7aa2', 'stroke-width': 3.5, 'stroke-linecap': 'round' }, cardB);
+    T(cardB, '空气把香味带进鼻子', { x: 192, y: 575, size: 23, fill: '#15803d', weight: 700, anchor: 'middle' });
+
+    const winGlow = mk('rect', { x: 489, y: 139, width: 397, height: 647, rx: 34, fill: 'none', stroke: '#ffd60a', 'stroke-width': 8 }, p);
+    put(winGlow, { o: 0 });
+    S.smellWinGlow = winGlow;
+
+    put(cardA, { o: 0, s: 0.9 }); tw(cardA, { o: 1, s: 1 }, m('sq_go'), 0.35, back);
+    put(cardB, { o: 0, s: 0.9 }); tw(cardB, { o: 1, s: 1 }, m('sq_go', 0.25), 0.35, back);
+
+    clockRun(t => {
+      Doudou.animateIdle(instA, t, { armL: 6, armR: -6 });
+      Doudou.animateIdle(instB, t + 0.6, { armL: 6, armR: -6 });
+    }, D, { tail: true });
+  }, {
+    lead: false,
+    hold: 1.5,
+    ask: done => quiz({ x: 915, y: 175, w: 605, cls: 'side' }, [
+      {
+        id: 'u2-smell-who',
+        prompt: ['哪一个小朋友能闻到花朵的香味呢？'],
+        build: choice(
+          [
+            [u2_swatch('#94a3b8'), '图 A · 捂住鼻子的小豆豆'],
+            [u2_swatch('#2bb673'), '图 B · 没有捂鼻子的小豆豆'],
+          ],
+          1,
+          '答对了！没有捂住鼻子时，花朵的香味会顺着空气进到鼻子里！',
+          ['把鼻子紧紧捂住，空气进不去就闻不到香味啦！', null],
+          () => {
+            if (S.smellWinGlow) fx(S.smellWinGlow, { o: 1 }, 0, 0.35, back);
+            u2_playSfx('chime', 0.6);
+          }
+        ),
+      },
+      {
+        id: 'u2-smell-danger',
+        prompt: ['下面哪种气味是在提醒我们“有危险”？'],
+        build: choice(
+          [
+            [u2_swatch('#ff7aa2'), '香香的鲜花味'],
+            [u2_swatch('#475569'), '烧焦冒黑烟的气味'],
+            [u2_swatch('#ffd166'), '烤面包的香味'],
+          ],
+          1,
+          '真棒！闻到烧焦冒烟的气味说明可能着火或东西烧糊了，要赶紧远离并告诉大人！',
+          ['鲜花的香味是安全的，黑烟烧焦味才代表危险哦！', null, '面包的香味说明美食烤好啦，不危险哦。']
+        ),
+      },
+      {
+        id: 'u2-smell-nice',
+        prompt: ['下面哪一样东西会发出好闻的香味（smell nice）？'],
+        build: choice(
+          [
+            [u2_swatch('#84a93c'), '穿脏的臭袜子'],
+            [u2_swatch('#ff5a5f'), '盛开的红玫瑰'],
+            [u2_swatch('#64748b'), '装满垃圾的桶'],
+          ],
+          1,
+          '太棒了！盛开的红玫瑰会发出香香的气味（smell nice）！',
+          ['臭袜子发出的是臭味哦！', null, '垃圾桶发出的是臭味哦！']
+        ),
+      },
+    ], done, '闻气味小侦探'),
+  }],
+
+  /* 6. 我的舌头 My tongue（甜酸咸苦 + 豆豆表情实时变脸秀） */
+  ['u2_tongue', '我的舌头 My tongue', (m, D) => {
+    const p = panel(0);
+    u2_bg(p, 'bg_u2_kitchen.jpg', 0.2);
+    u2_badge(p, '我的舌头 My tongue', 84, 60, '#ff5a5f', 0.1);
+    const bar = u2_card(p, 440, 32, 1060, 58, { fill: 'rgba(255,255,255,0.94)', stroke: '#ff5a5f', sw: 3, rx: 29 });
+    T(bar, '我有一个舌头，我用舌头尝味道 · I taste with my tongue.', { x: 530, y: 38, size: 25, fill: '#2b241d', weight: 700, anchor: 'middle' });
+
+    const expWrap = G(p, { x: 315, y: 535 });
+    const exp = Doudou.create(expWrap, { x: 0, y: 0, s: 1.62, hat: false, scarf: false, eyeColor: 'brown', expr: 'happy', armL: 24, armR: -24 });
+
+    const tastes = [
+      { mk: 't_sweet',  kind: 'sweet',  zh: '甜', en: 'sweet',  col: '#ff5a5f', gx: 825,  gy: 300 },
+      { mk: 't_sour',   kind: 'sour',   zh: '酸', en: 'sour',   col: '#f59e0b', gx: 1275, gy: 300 },
+      { mk: 't_salty',  kind: 'salty',  zh: '咸', en: 'salty',  col: '#2d7dd2', gx: 825,  gy: 635 },
+      { mk: 't_bitter', kind: 'bitter', zh: '苦', en: 'bitter', col: '#2bb673', gx: 1275, gy: 635 },
+    ];
+
+    tastes.forEach(ts => {
+      const cg = G(p, { x: ts.gx, y: ts.gy, o: 0, s: 0.8 });
+      mk('rect', { x: -195, y: -138, width: 390, height: 280, rx: 28, fill: 'rgba(255,255,255,0.95)', stroke: ts.col, 'stroke-width': 4 }, cg);
+      const art = G(cg, { x: -82, y: 4 });
+      u2_drawTasteFood(art, ts.kind);
+      T(cg, ts.zh, { x: 82, y: -12, size: 54, fill: ts.col, weight: 800, anchor: 'middle' });
+      T(cg, ts.en, { x: 82, y: 40, size: 30, fill: '#665c50', weight: 700, anchor: 'middle' });
+      const tAt = m(ts.mk);
+      tw(cg, { o: 1, s: 1 }, tAt, 0.4, back);
+      sfx('u2_tongue', tAt, 'pop', 0.45);
+    });
+
+    const tSour = m('t_sour'), tSalty = m('t_salty'), tBitter = m('t_bitter');
+    clockRun(t => {
+      Doudou.animateIdle(exp, t, { armL: 24, armR: -24 });
+      if (t >= tBitter) exp.setExpr('yuck');
+      else if (t >= tSalty) exp.setExpr('amazed');
+      else if (t >= tSour) exp.setExpr('sour');
+      else exp.setExpr('happy');
+    }, D, { tail: true });
+  }, { lead: false }],
+
+  /* 7. 互动游戏：听味道找食物（findWords + 实时变表情） */
+  ['u2_taste_game', '游戏 · 听味道找食物', (m, D) => {
+    const p = panel(0);
+    u2_bg(p, 'bg_u2_kitchen.jpg', 0.14);
+    u2_badge(p, '互动游戏 · 听味道找食物', 84, 60, '#f77f00', 0.1);
+    const bar = u2_card(p, 470, 32, 1020, 58, { fill: 'rgba(255,255,255,0.94)', stroke: '#f77f00', sw: 3, rx: 29 });
+    T(bar, '听听小豆豆想尝什么味道，点一点对应的食物吧！', { x: 510, y: 38, size: 25, fill: '#2b241d', weight: 700, anchor: 'middle' });
+
+    const { inst: tasteFace } = Doudou.createFacePortrait(p, {
+      x: 800, y: 295, r: 155, bg: '#fff8ec', frameColor: '#f2cf8d', showFrame: true,
+      hat: false, scarf: true, eyeColor: 'brown', expr: 'happy',
+    });
+
+    const foodSpecs = [
+      { id: 'sweet',  zh: '甜', en: 'sweet',  col: '#ff5a5f', fx: 245,  expr: 'happy' },
+      { id: 'sour',   zh: '酸', en: 'sour',   col: '#f59e0b', fx: 615,  expr: 'sour' },
+      { id: 'salty',  zh: '咸', en: 'salty',  col: '#2d7dd2', fx: 985,  expr: 'amazed' },
+      { id: 'bitter', zh: '苦', en: 'bitter', col: '#2bb673', fx: 1355, expr: 'yuck' },
+    ];
+
+    const foodMap = {};
+    foodSpecs.forEach(fs => {
+      const g = G(p, { x: fs.fx, y: 665 });
+      mk('rect', { x: -145, y: -125, width: 290, height: 245, rx: 28, fill: 'rgba(255,255,255,0.95)', stroke: fs.col, 'stroke-width': 4 }, g);
+      const art = G(g, { x: 0, y: -25 });
+      u2_drawTasteFood(art, fs.id);
+      T(g, `${fs.zh} · ${fs.en}`, { x: 0, y: 92, size: 28, fill: fs.col, weight: 800, anchor: 'middle' });
+      foodMap[fs.id] = g;
+      g.addEventListener('pointerdown', () => {
+        tasteFace.setExpr(fs.expr);
+      });
+    });
+
+    u2TasteThings = [
+      { g: foodMap.sweet,  word: '甜', clip: 'w-sweet',  side: 'above' },
+      { g: foodMap.sour,   word: '酸', clip: 'w-sour',   side: 'above' },
+      { g: foodMap.salty,  word: '咸', clip: 'w-salty',  side: 'above' },
+      { g: foodMap.bitter, word: '苦', clip: 'w-bitter', side: 'above' },
+    ];
+
+    clockRun(t => {
+      Doudou.animateIdle(tasteFace, t, { armL: 6, armR: -6 });
+    }, D, { tail: true });
+  }, {
+    lead: false,
+    ask: done => findWords(u2TasteThings, U2_TASTE_ASKS, done, { end: 'q-taste-done', there: 'q-there', minBox: 120 }),
+    video: false,
+  }],
+
+  /* 8. 五感复习挑战（你用哪个身体部位来……） */
+  ['u2_revise', '复习！五感部位连一连', (m, D) => {
+    const p = panel(0);
+    u2_bg(p, 'bg_u2_livingroom.jpg', 0.2);
+    u2_badge(p, '复习挑战 · 五感小管家', 84, 60, '#9d4edd', 0.1);
+
+    const expWrap = G(p, { x: 250, y: 525 });
+    const exp = Doudou.create(expWrap, { x: 0, y: 0, s: 1.5, hat: false, scarf: true, eyeColor: 'brown', expr: 'happy', armL: 26, armR: -26 });
+    S.reviseDoudou = exp;
+
+    const specs = [
+      ['闻气味 · to smell', '鼻子', '#f77f00'],
+      ['听声音 · to hear',  '耳朵', '#2d7dd2'],
+      ['尝味道 · to taste', '舌头', '#ff5a5f'],
+      ['摸一摸 · to feel',  '皮肤', '#2bb673'],
+    ];
+
+    S.reviseRows = [];
+    specs.forEach(([qTxt, ansTxt, col], i) => {
+      const cy = 155 + i * 168;
+      const card = u2_card(p, 445, cy, 430, 140, { fill: 'rgba(255,253,247,0.95)', stroke: '#e8d8bd', sw: 3.5, rx: 24 });
+      T(card, qTxt, { x: 30, y: 78, size: 26, fill: '#2b241d', weight: 700 });
+      const box = mk('rect', { x: 282, y: 34, width: 120, height: 72, rx: 18, fill: '#f4f7fb', stroke: col, 'stroke-width': 3.5, 'stroke-dasharray': '7 5' }, card);
+      const qMark = T(card, '?', { x: 342, y: 84, size: 38, fill: col, weight: 800, anchor: 'middle' });
+      const ansText = T(card, ansTxt, { x: 342, y: 82, size: 30, fill: '#ffffff', weight: 800, anchor: 'middle', o: 0 });
+      S.reviseRows.push({ box, qMark, ansText, col });
+      put(card, { o: 0, y: cy + 20 });
+      tw(card, { o: 1, y: cy }, m('rv_go', i * 0.25), 0.35, out);
+    });
+
+    clockRun(t => {
+      Doudou.animateIdle(exp, t, { armL: 26, armR: -26 });
+    }, D, { tail: true });
+  }, {
+    lead: false,
+    hold: 1.5,
+    ask: done => {
+      const revealOrgan = (idx, partName) => {
+        const r = S.reviseRows?.[idx];
+        if (r) {
+          r.box.setAttribute('fill', r.col);
+          r.box.removeAttribute('stroke-dasharray');
+          fx(r.qMark, { o: 0 }, 0, 0.18);
+          fx(r.ansText, { o: 1 }, 0.05, 0.25, back);
+          u2_playSfx('chime', 0.6);
+        }
+        if (S.reviseDoudou) {
+          S.reviseDoudou.highlightPart(partName, true);
+          setTimeout(() => S.reviseDoudou?.highlightPart(partName, false), 1100);
+        }
+      };
+      return quiz({ x: 915, y: 175, w: 605, cls: 'side' }, [
+        {
+          id: 'u2-rv-smell',
+          prompt: ['你用哪个身体部位来【闻气味 to smell】？'],
+          build: choice(
+            [
+              [u2_swatch('#2d7dd2'), '耳朵 ears'],
+              [u2_swatch('#f77f00'), '鼻子 nose'],
+              [u2_swatch('#ff5a5f'), '舌头 tongue'],
+            ],
+            1,
+            '答对了！我们用鼻子（nose）来闻香味、臭味和危险气味！',
+            ['耳朵是用来听声音的哦！', null, '舌头是用来尝味道的哦！'],
+            () => revealOrgan(0, 'nose')
+          ),
+        },
+        {
+          id: 'u2-rv-hear',
+          prompt: ['你用哪个身体部位来【听声音 to hear】？'],
+          build: choice(
+            [
+              [u2_swatch('#2d7dd2'), '耳朵 ears'],
+              [u2_swatch('#2bb673'), '皮肤 skin'],
+              [u2_swatch('#f77f00'), '鼻子 nose'],
+            ],
+            0,
+            '真棒！我们用两只耳朵（ears）来听柔和声和噪声！',
+            [null, '皮肤是用来触摸感受的哦！', '鼻子是用来闻气味的哦！'],
+            () => revealOrgan(1, 'ear')
+          ),
+        },
+        {
+          id: 'u2-rv-taste',
+          prompt: ['你用哪个身体部位来【尝味道 to taste】？'],
+          build: choice(
+            [
+              [u2_swatch('#2bb673'), '皮肤/手 skin'],
+              [u2_swatch('#2d7dd2'), '耳朵 ears'],
+              [u2_swatch('#ff5a5f'), '舌头 tongue'],
+            ],
+            2,
+            '太聪明了！我们用舌头（tongue）来尝甜、酸、咸、苦！',
+            ['皮肤能感觉冷热软硬，不能尝甜酸哦！', '耳朵是听声音的哦！', null],
+            () => revealOrgan(2, 'mouth')
+          ),
+        },
+        {
+          id: 'u2-rv-feel',
+          prompt: ['你用哪个身体部位来【摸一摸、感受安全】？'],
+          build: choice(
+            [
+              [u2_swatch('#2bb673'), '皮肤和手 skin'],
+              [u2_swatch('#f77f00'), '鼻子 nose'],
+              [u2_swatch('#ff5a5f'), '舌头 tongue'],
+            ],
+            0,
+            '全对啦！我们用皮肤和手（skin & hands）触摸和感受物体，避开危险！',
+            [null, '鼻子是用来闻气味的哦！', '危险的东西千万不能用舌头舔哦！'],
+            () => revealOrgan(3, 'hand')
+          ),
+        },
+      ], done, '五感复习挑战');
+    },
+  }],
+
+  /* 9. 五感小达人通关总结 */
+  ['u2_outro', '通关成功 · 五感小达人！', (m, D) => {
+    const p = panel(0);
+    u2_bg(p, 'bg_u2_livingroom.jpg', 0.18);
+    sfx('u2_outro', 0.15, 'applause', 0.45);
+    sfx('u2_outro', 0.25, 'chime', 0.5);
+
+    u2_badge(p, '单元 2 通关 · 五感小达人！', 84, 62, '#2bb673', 0.1);
+    const expWrap = G(p, { x: 330, y: 515 });
+    const exp = Doudou.create(expWrap, { x: 0, y: 0, s: 1.54, hat: true, scarf: true, prop: 'badge', propSide: 'R', eyeColor: 'brown', expr: 'happy', armL: 24, armR: -78 });
+
+    const wins = [
+      ['o1', '耳朵：分辨柔和的声音与吵闹声', '#2d7dd2', 0, 'dot'],
+      ['o2', '皮肤：感受物品，远离尖刺和烫水', '#2bb673', 1, 'star'],
+      ['o3', '鼻子：分辨香味、臭味与危险浓烟', '#f77f00', 2, 'tri'],
+      ['o4', '舌头：尝出甜、酸、咸、苦四种味道', '#ff5a5f', 3, 'sq'],
+    ];
+    wins.forEach(([mkName, txt, col, idx, icon]) => {
+      const card = G(p, { x: 640, y: 205 + idx * 145, o: 0, s: 0.88 });
+      mk('rect', { x: 0, y: -48, width: 820, height: 108, rx: 28, fill: 'rgba(255,255,255,0.95)', stroke: col, 'stroke-width': 4 }, card);
+      if (icon === 'dot') mk('circle', { cx: 48, cy: 6, r: 16, fill: col }, card);
+      else if (icon === 'star') mk('polygon', { points: '48,-12 54,0 66,0 56,8 60,20 48,13 36,20 40,8 30,0 42,0', fill: col }, card);
+      else if (icon === 'tri') mk('polygon', { points: '48,-12 32,18 64,18', fill: col }, card);
+      else mk('rect', { x: 34, y: -8, width: 28, height: 28, rx: 5, fill: col }, card);
+      T(card, txt, { x: 86, y: 16, size: 32, fill: '#2b241d', weight: 700 });
+      tw(card, { o: 1, s: 1 }, m(mkName), 0.35, back);
+    });
+
+    clockRun(t => {
+      put(expWrap, { y: 515 - Math.abs(12 * Math.sin(t * 4)) });
+      Doudou.animateIdle(exp, t, { armL: 24, armR: -78 + 14 * Math.sin(t * 6.5) });
+    }, D, { tail: true });
+  }, { lead: false }],
+].map(([id, title, run, extra]) => ({ id, title, run, ...extra }));
+
+/* ---------- 欢快温馨家庭配乐（人声下自动压低 -16 dB） ---------- */
+window.MUSIC_LEVELS = { under: -16, open: -8 };
+music('audio/bgm/my_family.mp3', ['u2_intro', 'u2_ears', 'u2_skin_safe', 'u2_nose', 'u2_smell_quiz', 'u2_tongue', 'u2_taste_game', 'u2_revise', 'u2_outro'], 0.34);
+
+boot();
+</script>
+</body>
+</html>
