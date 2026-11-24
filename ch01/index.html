@@ -3,651 +3,377 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>游戏时间到！It's Playtime! · 趣味科学小课堂</title>
+<title>关于我 About Me · 趣味科学小课堂</title>
 <link rel="stylesheet" href="../lib/engine.css">
 <link rel="expect" href="#bar" blocking="render">
 </head>
 <body>
 <script src="../lib/engine.js"></script>
+<script src="../lib/doudou.js"></script>
 <script src="audio/zh/timings.js"></script>
 <script>
 'use strict';
-const CHAPTER = { number: 1, title: '游戏时间到！It\'s Playtime!', minutes: 4, language: 'zh', film: true, questionKeys: false };
+const CHAPTER = { number: 1, title: '关于我 About Me', minutes: 5, language: 'zh', film: true, questionKeys: false };
 try { if (localStorage.getItem('captions') === null) setCaptions(true, false); } catch {}
 
-/* ---------- 绘本舞台助手（sc_ 前缀避免全局冲突） ---------- */
-function sc_bg(p, imgName, veil = 0.22) {
+/* ---------- Unit 1 绘本舞台助手（u1_ 前缀避免全局冲突） ---------- */
+function u1_bg(p, imgName, veil = 0.2) {
   mk('image', { href: `../img/${imgName}`, x: 0, y: 0, width: 1600, height: 900, preserveAspectRatio: 'xMidYMid slice' }, p);
   if (veil > 0) mk('rect', { x: 0, y: 0, width: 1600, height: 900, fill: `rgba(255,253,247,${veil})` }, p);
 }
 
-const sc_txt = (p, str, x, y, t0, { size = 30, fill = COL.chalk, anchor = 'start', weight = 700 } = {}) => {
+function u1_txt(p, str, x, y, t0, { size = 30, fill = COL.chalk, anchor = 'start', weight = 700 } = {}) {
   const e = T(p, str, { x, y, size, fill, anchor, weight, o: 0 });
   if (t0 !== null) show(e, t0, 0.35);
   return e;
-};
+}
 
-function sc_badge(p, label, x = 80, y = 66, fill = '#ff5a5f', t0 = 0.1) {
+function u1_badge(p, label, x = 80, y = 62, fill = '#ff5a5f', t0 = 0.1) {
   const g = G(p, { x, y, o: 0 });
-  const w = Math.max(150, label.length * 26 + 52);
+  const w = Math.max(160, label.length * 25 + 54);
   mk('rect', { x: 4, y: -24, width: w, height: 52, rx: 26, fill: 'rgba(60,40,10,0.14)' }, g);
   mk('rect', { x: 0, y: -28, width: w, height: 52, rx: 26, fill }, g);
-  T(g, label, { x: w / 2, y: 7, size: 25, fill: '#ffffff', weight: 700, anchor: 'middle' });
+  T(g, label, { x: w / 2, y: 7, size: 24, fill: '#ffffff', weight: 700, anchor: 'middle' });
   tw(g, { o: 1 }, t0, 0.3);
   return g;
 }
 
-function sc_panelCard(p, x, y, w, h, { fill = 'rgba(255,253,247,0.92)', stroke = '#f0dec0', sw = 4, rx = 28 } = {}) {
+function u1_card(p, x, y, w, h, { fill = 'rgba(255,253,247,0.93)', stroke = '#f0dec0', sw = 4, rx = 28 } = {}) {
   const g = G(p, { x, y });
   mk('rect', { x: 6, y: 10, width: w, height: h, rx, fill: 'rgba(80,50,20,0.1)' }, g);
   mk('rect', { x: 0, y: 0, width: w, height: h, rx, fill, stroke, 'stroke-width': sw }, g);
   return g;
 }
 
-/* 题目选项中的彩色圆块 + 互动即时音效 */
-function sc_swatch(hex) {
-  const sp = h('span', 'sc-swatch');
-  sp.style.background = hex;
-  if (hex.toLowerCase() === '#ffffff') sp.style.borderColor = '#2b241d';
-  return sp;
-}
-
-const SC_SFX_CACHE = {};
-function sc_playSfx(name, vol = 0.6) {
+const U1_SFX_CACHE = {};
+function u1_playSfx(name, vol = 0.6) {
   try {
-    const a = SC_SFX_CACHE[name] || (SC_SFX_CACHE[name] = new Audio(`audio/sfx/${name}.mp3`));
+    const a = U1_SFX_CACHE[name] || (U1_SFX_CACHE[name] = new Audio(`audio/sfx/${name}.mp3`));
     a.currentTime = 0;
     a.volume = vol * +($('volume')?.value ?? 1);
     a.play().catch(() => {});
   } catch {}
 }
 
-/* 可爱眨眼微笑五官（让颜色块和形状都变成活过来的小伙伴） */
-function sc_face(p, x, y, { s = 1, light = false } = {}) {
-  const fg = light ? '#ffffff' : '#2b241d';
-  const g = G(p, { x, y, s });
-  const eyeL = mk('circle', { cx: -14, cy: -4, r: 4.8, fill: fg }, g);
-  const eyeR = mk('circle', { cx: 14, cy: -4, r: 4.8, fill: fg }, g);
-  if (!light) {
-    mk('circle', { cx: -12.5, cy: -5.5, r: 1.6, fill: '#ffffff' }, g);
-    mk('circle', { cx: 15.5, cy: -5.5, r: 1.6, fill: '#ffffff' }, g);
+function u1_numBadge(txt, col) {
+  const sp = h('span', 'sc-swatch');
+  sp.style.background = col;
+  sp.style.color = '#ffffff';
+  sp.style.fontWeight = '800';
+  sp.style.fontSize = '18px';
+  sp.style.display = 'inline-flex';
+  sp.style.alignItems = 'center';
+  sp.style.justifyContent = 'center';
+  sp.textContent = txt;
+  return sp;
+}
+
+/* 创建可点双语部位卡 + 指向线 */
+function u1_makeTag(p, spec, tAt) {
+  const { x, y, zh, en, col, tx, ty } = spec;
+  const line = mk('line', {
+    x1: x + (tx > x ? 116 : -116), y1: y,
+    x2: tx, y2: ty,
+    stroke: col, 'stroke-width': 3.5, 'stroke-dasharray': '7 6', 'stroke-linecap': 'round',
+  }, p);
+  put(line, { o: 0 });
+  const dot = mk('circle', { cx: tx, cy: ty, r: 7.5, fill: col, stroke: '#ffffff', 'stroke-width': 2.5 }, p);
+  put(dot, { o: 0 });
+  const g = G(p, { x, y, o: 0, s: 0.8 });
+  mk('rect', { x: -116, y: -36, width: 232, height: 74, rx: 22, fill: 'rgba(60,40,10,0.1)' }, g);
+  mk('rect', { x: -120, y: -39, width: 236, height: 74, rx: 22, fill: 'rgba(255,253,247,0.96)', stroke: col, 'stroke-width': 3.5 }, g);
+  mk('circle', { cx: -92, cy: -2, r: 10, fill: col }, g);
+  T(g, zh, { x: -72, y: -6, size: 26, fill: '#2b241d', weight: 700, anchor: 'start' });
+  T(g, en, { x: -72, y: 21, size: 19, fill: '#665c50', weight: 600, anchor: 'start' });
+  tw(g, { o: 1, s: 1 }, tAt, 0.35, back);
+  tw(line, { o: 0.85 }, tAt, 0.3);
+  tw(dot, { o: 1 }, tAt, 0.3);
+  return { g, line, dot };
+}
+
+/* 刷牙物品纯 SVG 图标 */
+function u1_drawBrushItem(par, kind) {
+  if (kind === 'toothbrush') {
+    mk('g', { transform: 'rotate(-28)' }, par);
+    const w = par.lastChild;
+    mk('path', { d: 'M-8,44 L-5,-36 C-5,-44 5,-44 5,-36 L8,44 C8,50 -8,50 -8,44 Z', fill: '#38bdf8', stroke: '#2b241d', 'stroke-width': 3 }, w);
+    mk('rect', { x: 3, y: -38, width: 22, height: 22, rx: 5, fill: '#ffffff', stroke: '#2b241d', 'stroke-width': 2.6 }, w);
+    mk('path', { d: 'M8,-32 H21 M8,-26 H21 M8,-20 H21', stroke: '#90e0ef', 'stroke-width': 2.2, 'stroke-linecap': 'round' }, w);
+  } else if (kind === 'toothpaste') {
+    mk('g', { transform: 'rotate(-16)' }, par);
+    const w = par.lastChild;
+    mk('path', { d: 'M-18,-28 L18,-28 L13,34 L-13,34 Z', fill: '#ff7aa2', stroke: '#2b241d', 'stroke-width': 3, 'stroke-linejoin': 'round' }, w);
+    mk('rect', { x: -20, y: -34, width: 40, height: 10, rx: 3, fill: '#ffffff', stroke: '#2b241d', 'stroke-width': 2.5 }, w);
+    mk('rect', { x: -9, y: 34, width: 18, height: 14, rx: 4, fill: '#38bdf8', stroke: '#2b241d', 'stroke-width': 2.6 }, w);
+    mk('path', { d: 'M-10,-4 H10 M-8,8 H8', stroke: '#ffffff', 'stroke-width': 4, 'stroke-linecap': 'round' }, w);
+  } else if (kind === 'comb') {
+    mk('g', { transform: 'rotate(-20)' }, par);
+    const w = par.lastChild;
+    mk('rect', { x: -34, y: -18, width: 68, height: 18, rx: 8, fill: '#ffd166', stroke: '#2b241d', 'stroke-width': 3 }, w);
+    for (let cx = -28; cx <= 28; cx += 9) {
+      mk('rect', { x: cx - 2, y: 0, width: 4, height: 24, rx: 2, fill: '#ffd166', stroke: '#2b241d', 'stroke-width': 2 }, w);
+    }
+  } else if (kind === 'soap') {
+    mk('ellipse', { cx: 0, cy: 6, rx: 36, ry: 22, fill: '#a8e6cf', stroke: '#2b241d', 'stroke-width': 3 }, par);
+    mk('ellipse', { cx: -10, cy: 0, rx: 14, ry: 6, transform: 'rotate(-18 -10 0)', fill: '#ffffff', opacity: 0.6 }, par);
+    mk('circle', { cx: 22, cy: -16, r: 9, fill: '#e0fbfc', stroke: '#38bdf8', 'stroke-width': 2 }, par);
+    mk('circle', { cx: 34, cy: -26, r: 5.5, fill: '#e0fbfc', stroke: '#38bdf8', 'stroke-width': 2 }, par);
   }
-  mk('ellipse', { cx: -22, cy: 5, rx: 6, ry: 3.5, fill: '#ff8fa3', opacity: light ? 0.5 : 0.7 }, g);
-  mk('ellipse', { cx: 22, cy: 5, rx: 6, ry: 3.5, fill: '#ff8fa3', opacity: light ? 0.5 : 0.7 }, g);
-  mk('path', { d: 'M-9 8 Q0 17 9 8', fill: 'none', stroke: fg, 'stroke-width': 3, 'stroke-linecap': 'round' }, g);
-  return { g, eyeL, eyeR };
 }
 
-/* 有机颜料水滴块 */
-function sc_blob(p, x, y, fill, { s = 1, stroke = 'none', sw = 0, face = true, lightFace = false } = {}) {
-  const g = G(p, { x, y, s });
-  mk('path', {
-    d: 'M-76 -14 C-86 -48 -38 -64 2 -54 C36 -66 84 -42 78 -8 C90 26 48 60 6 52 C-34 66 -88 38 -76 -14 Z',
-    fill, stroke, 'stroke-width': sw,
-  }, g);
-  mk('ellipse', { cx: -32, cy: -28, rx: 14, ry: 7, transform: 'rotate(-22 -32 -28)', fill: '#ffffff', opacity: 0.35 }, g);
-  const fc = face ? sc_face(g, 0, 2, { s: 0.95, light: lightFace }) : null;
-  return { g, fc };
-}
-
-/* 拿放大镜的小探险家 */
-function sc_explorer(p, x, y, { s = 1 } = {}) {
-  const root = G(p, { x, y, s });
-  mk('ellipse', { cx: 0, cy: 176, rx: 66, ry: 14, fill: 'rgba(60,40,10,0.14)' }, root);
-  mk('rect', { x: -34, y: 100, width: 20, height: 58, rx: 10, fill: '#ffd6b0', stroke: '#2b241d', 'stroke-width': 3 }, root);
-  mk('rect', { x: 14, y: 100, width: 20, height: 58, rx: 10, fill: '#ffd6b0', stroke: '#2b241d', 'stroke-width': 3 }, root);
-  mk('ellipse', { cx: -26, cy: 162, rx: 22, ry: 12, fill: '#ff5a5f', stroke: '#2b241d', 'stroke-width': 3 }, root);
-  mk('ellipse', { cx: 26, cy: 162, rx: 22, ry: 12, fill: '#ff5a5f', stroke: '#2b241d', 'stroke-width': 3 }, root);
-  mk('rect', { x: -42, y: 66, width: 84, height: 48, rx: 10, fill: '#2b5ea8', stroke: '#2b241d', 'stroke-width': 3 }, root);
-  mk('path', { d: 'M-44 0 L44 0 L46 72 L-46 72 Z', fill: '#2d9cdb', stroke: '#2b241d', 'stroke-width': 3 }, root);
-  mk('circle', { cx: 0, cy: 36, r: 13, fill: '#ffd93d' }, root);
-
-  const armL = G(root, { x: -46, y: 14, r: 18 });
-  mk('path', { d: 'M0 0 L-38 48', stroke: '#2b241d', 'stroke-width': 25, 'stroke-linecap': 'round' }, armL);
-  mk('path', { d: 'M0 0 L-38 48', stroke: '#ffd6b0', 'stroke-width': 19, 'stroke-linecap': 'round' }, armL);
-  mk('circle', { cx: -40, cy: 52, r: 12, fill: '#ffd6b0', stroke: '#2b241d', 'stroke-width': 3 }, armL);
-  // 放大镜
-  mk('path', { d: 'M-42 52 L-62 24', stroke: '#2b241d', 'stroke-width': 8, 'stroke-linecap': 'round' }, armL);
-  mk('circle', { cx: -74, cy: 6, r: 28, fill: 'rgba(180,235,255,0.65)', stroke: '#2b241d', 'stroke-width': 6 }, armL);
-
-  const armR = G(root, { x: 46, y: 14, r: -110 });
-  mk('path', { d: 'M0 0 L38 48', stroke: '#2b241d', 'stroke-width': 25, 'stroke-linecap': 'round' }, armR);
-  mk('path', { d: 'M0 0 L38 48', stroke: '#ffd6b0', 'stroke-width': 19, 'stroke-linecap': 'round' }, armR);
-  mk('circle', { cx: 40, cy: 52, r: 12, fill: '#ffd6b0', stroke: '#2b241d', 'stroke-width': 3 }, armR);
-
-  const head = G(root, { x: 0, y: -56 });
-  mk('circle', { cx: -58, cy: 6, r: 13, fill: '#ffd6b0', stroke: '#2b241d', 'stroke-width': 3 }, head);
-  mk('circle', { cx: 58, cy: 6, r: 13, fill: '#ffd6b0', stroke: '#2b241d', 'stroke-width': 3 }, head);
-  mk('circle', { cx: 0, cy: 0, r: 58, fill: '#ffd6b0', stroke: '#2b241d', 'stroke-width': 3 }, head);
-  mk('path', { d: 'M-60 -6 A60 60 0 0 1 60 -6 C38 -36 14 -38 0 -22 C-16 -40 -42 -30 -60 -6 Z', fill: '#231f20' }, head);
-  mk('path', { d: 'M-20 -58 C-8 -76 16 -74 28 -52', fill: 'none', stroke: '#231f20', 'stroke-width': 9, 'stroke-linecap': 'round' }, head);
-  const eyeL = mk('circle', { cx: -22, cy: -4, r: 7, fill: '#2b241d' }, head);
-  const eyeR = mk('circle', { cx: 22, cy: -4, r: 7, fill: '#2b241d' }, head);
-  mk('circle', { cx: -20, cy: -6, r: 2.4, fill: '#ffffff' }, head);
-  mk('circle', { cx: 24, cy: -6, r: 2.4, fill: '#ffffff' }, head);
-  mk('ellipse', { cx: -35, cy: 12, rx: 9, ry: 5, fill: '#ff8fa3', opacity: 0.7 }, head);
-  mk('ellipse', { cx: 35, cy: 12, rx: 9, ry: 5, fill: '#ff8fa3', opacity: 0.7 }, head);
-  mk('path', { d: 'M-14 22 Q0 36 14 22', fill: 'none', stroke: '#d9483b', 'stroke-width': 4, 'stroke-linecap': 'round' }, head);
-  return { root, head, armL, armR, eyeL, eyeR };
-}
-
-/* 绘制拟人化 3D/2D 形状角色 */
-function sc_drawShape(p, kind, x, y, { s = 1, label = '', en = '' } = {}) {
-  const g = G(p, { x, y, s });
-  let fc = null;
-  if (kind === 'cube') {
-    mk('polygon', { points: '-52,-32 0,-60 52,-32 0,-4', fill: '#ffe169', stroke: '#2b241d', 'stroke-width': 3 }, g);
-    mk('polygon', { points: '-52,-32 0,-4 0,56 -52,28', fill: '#ffbe0b', stroke: '#2b241d', 'stroke-width': 3 }, g);
-    mk('polygon', { points: '0,-4 52,-32 52,28 0,56', fill: '#f39c12', stroke: '#2b241d', 'stroke-width': 3 }, g);
-    fc = sc_face(g, -22, 16, { s: 0.65 });
-  } else if (kind === 'cuboid') {
-    mk('polygon', { points: '-86,-22 -44,-46 86,-46 44,-22', fill: '#c77dff', stroke: '#2b241d', 'stroke-width': 3 }, g);
-    mk('polygon', { points: '-86,-22 44,-22 44,36 -86,36', fill: '#9d4edd', stroke: '#2b241d', 'stroke-width': 3 }, g);
-    mk('polygon', { points: '44,-22 86,-46 86,12 44,36', fill: '#7b2cbf', stroke: '#2b241d', 'stroke-width': 3 }, g);
-    fc = sc_face(g, -20, 8, { s: 0.72, light: true });
-  } else if (kind === 'sphere') {
-    mk('circle', { cx: 0, cy: 0, r: 54, fill: '#274c9b', stroke: '#2b241d', 'stroke-width': 3 }, g);
-    mk('circle', { cx: -10, cy: -12, r: 42, fill: '#3b6fd8' }, g);
-    mk('ellipse', { cx: -22, cy: -26, rx: 14, ry: 8, transform: 'rotate(-28 -22 -26)', fill: '#9cc2ff', opacity: 0.8 }, g);
-    fc = sc_face(g, 0, 4, { s: 0.85, light: true });
-  } else if (kind === 'pyramid') {
-    mk('polygon', { points: '0,-62 -56,42 10,56', fill: '#24b0e6', stroke: '#2b241d', 'stroke-width': 3 }, g);
-    mk('polygon', { points: '0,-62 10,56 58,30', fill: '#0b87ba', stroke: '#2b241d', 'stroke-width': 3 }, g);
-    fc = sc_face(g, -14, 16, { s: 0.68, light: true });
-  } else if (kind === 'square') {
-    mk('rect', { x: -50, y: -50, width: 100, height: 100, rx: 10, fill: '#ff70a6', stroke: '#2b241d', 'stroke-width': 3 }, g);
-    fc = sc_face(g, 0, 4, { s: 0.88 });
-  } else if (kind === 'rectangle') {
-    mk('rect', { x: -86, y: -44, width: 172, height: 88, rx: 10, fill: '#8ac926', stroke: '#2b241d', 'stroke-width': 3 }, g);
-    fc = sc_face(g, 0, 4, { s: 0.88 });
-  } else if (kind === 'circle') {
-    mk('circle', { cx: 0, cy: 0, r: 54, fill: '#ff7b29', stroke: '#2b241d', 'stroke-width': 3 }, g);
-    fc = sc_face(g, 0, 4, { s: 0.88, light: true });
-  } else if (kind === 'triangle') {
-    mk('polygon', { points: '0,-56 -60,48 60,48', fill: '#19a7e0', stroke: '#2b241d', 'stroke-width': 3, 'stroke-linejoin': 'round' }, g);
-    fc = sc_face(g, 0, 18, { s: 0.78, light: true });
+/* 眼睛能看到什么：小图标绘制 */
+function u1_drawEyeConcept(par, kind) {
+  if (kind === 'colours') {
+    // 红苹果、黄星星、蓝气球
+    mk('circle', { cx: -66, cy: 10, r: 28, fill: '#ff5a5f', stroke: '#2b241d', 'stroke-width': 2.8 }, par);
+    mk('path', { d: 'M-66,-18 Q-62,-32 -52,-28', fill: 'none', stroke: '#4f772d', 'stroke-width': 4, 'stroke-linecap': 'round' }, par);
+    mk('polygon', { points: '0,-24 9,-4 30,-4 13,9 19,29 0,17 -19,29 -13,9 -30,-4 -9,-4', fill: '#ffd60a', stroke: '#2b241d', 'stroke-width': 2.8, 'stroke-linejoin': 'round' }, par);
+    mk('ellipse', { cx: 66, cy: 2, rx: 24, ry: 29, fill: '#38bdf8', stroke: '#2b241d', 'stroke-width': 2.8 }, par);
+    mk('path', { d: 'M66,31 Q62,48 70,56', fill: 'none', stroke: '#5a3b2c', 'stroke-width': 2.6 }, par);
+  } else if (kind === 'sizes') {
+    // 大球 vs 小球 + 大熊轮廓 vs 小熊轮廓
+    mk('circle', { cx: -48, cy: 0, r: 40, fill: '#ff9f1c', stroke: '#2b241d', 'stroke-width': 3 }, par);
+    mk('path', { d: 'M-72,-14 Q-48,-28 -24,-14', fill: 'none', stroke: '#ffffff', 'stroke-width': 4, 'stroke-linecap': 'round', opacity: 0.7 }, par);
+    T(par, '大 big', { x: -48, y: 58, size: 19, fill: '#2b241d', weight: 700, anchor: 'middle' });
+    mk('circle', { cx: 52, cy: 18, r: 20, fill: '#2ec4b6', stroke: '#2b241d', 'stroke-width': 3 }, par);
+    T(par, '小 small', { x: 52, y: 58, size: 19, fill: '#2b241d', weight: 700, anchor: 'middle' });
+  } else if (kind === 'shapes') {
+    mk('circle', { cx: -64, cy: 6, r: 26, fill: '#ff70a6', stroke: '#2b241d', 'stroke-width': 2.8 }, par);
+    mk('rect', { x: -24, y: -18, width: 48, height: 48, rx: 6, fill: '#8ac926', stroke: '#2b241d', 'stroke-width': 2.8 }, par);
+    mk('polygon', { points: '66,-22 38,28 94,28', fill: '#3a86ff', stroke: '#2b241d', 'stroke-width': 2.8, 'stroke-linejoin': 'round' }, par);
   }
-  if (label) {
-    T(g, label, { x: 0, y: 92, size: 28, fill: '#2b241d', weight: 700, anchor: 'middle' });
-    if (en) T(g, en, { x: 0, y: 122, size: 22, fill: '#665c50', weight: 600, anchor: 'middle' });
-  }
-  return { g, fc };
 }
 
-/* ---------- 听音找一找形状列表 ---------- */
-let sc_shapeThings = [];
-const SC_SHAPE_ASKS = [
-  { word: '三角形', clip: 'q-triangle', again: 'r-triangle' },
-  { word: '圆形', clip: 'q-circle', again: 'r-circle' },
-  { word: '正方形', clip: 'q-square', again: 'r-square' },
-  { word: '球体', clip: 'q-sphere', again: 'r-sphere' },
-  { word: '正方体', clip: 'q-cube', again: 'r-cube' },
+/* ---------- 听音找一找配置 ---------- */
+let u1BodyThings = [];
+const U1_BODY_ASKS = [
+  { word: '头', clip: 'q-head', again: 'r-head' },
+  { word: '肩膀', clip: 'q-shoulder', again: 'r-shoulder' },
+  { word: '手指', clip: 'q-finger', again: 'r-finger' },
+  { word: '膝盖', clip: 'q-knee', again: 'r-knee' },
+  { word: '脚趾', clip: 'q-toe', again: 'r-toe' },
+];
+
+let u1FaceThings = [];
+const U1_FACE_ASKS = [
+  { word: '眼睛', clip: 'q-eye', again: 'r-eye' },
+  { word: '耳朵', clip: 'q-ear', again: 'r-ear' },
+  { word: '鼻子', clip: 'q-nose', again: 'r-nose' },
+  { word: '脸颊', clip: 'q-cheek', again: 'r-cheek' },
+  { word: '牙齿', clip: 'q-teeth', again: 'r-teeth' },
 ];
 
 /* ---------- 节拍时间线 BEATS ---------- */
 const BEATS = [
-  /* 1. 活泼开场 */
-  ['intro', '游戏时间到！It\'s Playtime!', (m, D) => {
+  /* 1. 开场：早安！小探险家豆豆 */
+  ['u1_intro', '早安！关于我 About Me', (m, D) => {
     const p = panel(0);
-    sc_bg(p, 'bg_playroom.jpg', 0.14);
-    sfx('intro', 0.2, 'bell', 0.55);
+    u1_bg(p, 'bg_u1_bedroom.jpg', 0.16);
+    sfx('u1_intro', 0.2, 'bell', 0.55);
 
-    sc_badge(p, '趣味科学小课堂', 84, 68, '#ff5a5f', 0.1);
-    const titleBox = sc_panelCard(p, 560, 140, 860, 260, { fill: 'rgba(255,255,255,0.92)', stroke: '#ffbe0b', sw: 5, rx: 36 });
-    T(titleBox, '游戏时间到！', { x: 430, y: 112, size: 74, fill: '#ff5a5f', weight: 700, anchor: 'middle' });
-    T(titleBox, 'It\'s Playtime!', { x: 430, y: 186, size: 42, fill: '#2d7dd2', weight: 700, anchor: 'middle' });
-    put(titleBox, { o: 0, s: 0.85 }); tw(titleBox, { o: 1, s: 1 }, 0.25, 0.5, back);
+    u1_badge(p, '单元 1 · 关于我 About Me', 84, 62, '#ff5a5f', 0.1);
+    const titleBox = u1_card(p, 585, 130, 880, 240, { fill: 'rgba(255,255,255,0.94)', stroke: '#ffbe0b', sw: 5, rx: 36 });
+    T(titleBox, '关于我 · About Me', { x: 440, y: 105, size: 64, fill: '#ff5a5f', weight: 700, anchor: 'middle' });
+    T(titleBox, '跟着小探险家豆豆认识自己的身体和五官！', { x: 440, y: 178, size: 30, fill: '#2d7dd2', weight: 700, anchor: 'middle' });
+    put(titleBox, { o: 0, s: 0.86 }); tw(titleBox, { o: 1, s: 1 }, 0.2, 0.5, back);
 
-    const exp = sc_explorer(p, 320, 520, { s: 1.48 });
-    put(exp.root, { o: 0, y: 580 });
-    tw(exp.root, { o: 1, y: 520 }, 0.2, 0.6, out);
+    const expWrap = G(p, { x: 350, y: 575, o: 0 });
+    const exp = Doudou.create(expWrap, { x: 0, y: 0, s: 1.62, hat: false, scarf: false, barefoot: true, eyeColor: 'brown', expr: 'happy', armL: 26, armR: -120 });
+    tw(expWrap, { o: 1, y: 525 }, 0.2, 0.6, out);
 
-    // 四个主题徽章图标随旁白跳出（使用纯 SVG 彩点/图形图标，避免无 emoji 字体时出现方框）
-    const tags = [
-      ['认识颜色', '#ff5a5f', 660, 515, 0, 'dot'],
-      ['混色魔法', '#9d4edd', 920, 515, 0.25, 'star'],
-      ['形状朋友', '#19a7e0', 1180, 515, 0.5, 'tri'],
-      ['分类与影子', '#2bb673', 920, 660, 0.75, 'sq'],
+    const previewCards = [
+      ['m_body', '我的身体 My body', '#ff5a5f', 775, 495, 'circle'],
+      ['m_face', '我的脸 My face', '#f77f00', 1185, 495, 'star'],
+      ['m_eyes', '神奇眼睛 My eyes', '#2d7dd2', 775, 650, 'eye'],
+      ['m_go',   '红绿灯与数数', '#2bb673', 1185, 650, 'sq'],
     ];
-    tags.forEach(([txt, col, tx, ty, dt, icon]) => {
+    previewCards.forEach(([mkName, label, col, tx, ty, icon]) => {
       const b = G(p, { x: tx, y: ty, o: 0, s: 0.82 });
-      mk('rect', { x: -115, y: -36, width: 230, height: 72, rx: 36, fill: '#ffffff', stroke: col, 'stroke-width': 4 }, b);
-      if (icon === 'dot') mk('circle', { cx: -74, cy: 0, r: 12, fill: col }, b);
-      else if (icon === 'star') mk('polygon', { points: '-74,-14 -69,-4 -59,-4 -67,3 -64,13 -74,7 -84,13 -81,3 -89,-4 -79,-4', fill: col }, b);
-      else if (icon === 'tri') mk('polygon', { points: '-74,-13 -87,11 -61,11', fill: col }, b);
-      else mk('rect', { x: -85, y: -11, width: 22, height: 22, rx: 4, fill: col }, b);
-      T(b, txt, { x: 14, y: 10, size: 28, fill: col, weight: 700, anchor: 'middle' });
-      tw(b, { o: 1, s: 1 }, m('ready', dt), 0.38, back);
-    });
-
-    clockRun(t => {
-      put(exp.armR, { r: -110 + 18 * Math.sin(t * 7) });
-      put(exp.head, { r: 3.5 * Math.sin(t * 2.5) });
-      put(exp.eyeL, { s: (t % 3.1 > 2.95) ? 0.15 : 1 });
-      put(exp.eyeR, { s: (t % 3.1 > 2.95) ? 0.15 : 1 });
-    }, D, { tail: true });
-  }, { lead: false }],
-
-  /* 2. 九种颜色（会眨眼的颜料水滴宝宝） */
-  ['colours', '颜色 Colours', (m, D) => {
-    const p = panel(0);
-    sc_bg(p, 'bg_playroom.jpg', 0.26);
-    sc_badge(p, '颜色 Colours', 84, 64, '#ff5a5f', 0.1);
-    const sub = sc_panelCard(p, 510, 36, 910, 56, { fill: 'rgba(255,255,255,0.9)', stroke: '#f0dec0', sw: 2.5, rx: 28 });
-    T(sub, '这里有不同的颜色 · There are different colours.', { x: 455, y: 37, size: 27, fill: '#2b241d', weight: 700, anchor: 'middle' });
-    put(sub, { o: 0 }); show(sub, 0.2, 0.35);
-
-    const palette = [
-      ['c_red', '红色', 'red', '#e63946', '#2b241d', true],
-      ['c_yellow', '黄色', 'yellow', '#ffd60a', '#2b241d', false],
-      ['c_green', '绿色', 'green', '#57cc3a', '#2b241d', false],
-      ['c_brown', '褐色', 'brown', '#a0522d', '#2b241d', true],
-      ['c_orange', '橙色', 'orange', '#ff851b', '#2b241d', false],
-      ['c_blue', '蓝色', 'blue', '#00a8e8', '#2b241d', true],
-      ['c_purple', '紫色', 'purple', '#7b2cbf', '#2b241d', true],
-      ['c_white', '白色', 'white', '#ffffff', '#2b241d', false],
-      ['c_black', '黑色', 'black', '#2b2b2b', '#2b241d', true],
-    ];
-
-    const blobs = [];
-    palette.forEach(([mkName, zh, en, hex, border, lightFace], i) => {
-      const col = i % 3, row = Math.floor(i / 3);
-      const x = 350 + col * 450, y = 232 + row * 224;
-      const card = G(p, { x, y, o: 0, s: 0.78 });
-      mk('rect', { x: -175, y: -88, width: 350, height: 186, rx: 24, fill: 'rgba(255,255,255,0.92)', stroke: '#f0dec0', 'stroke-width': 3 }, card);
-      const b = sc_blob(card, -68, 6, hex, {
-        s: 0.92,
-        stroke: hex === '#ffffff' ? '#2b241d' : 'none',
-        sw: hex === '#ffffff' ? 3 : 0,
-        lightFace,
-      });
-      T(card, zh, { x: 84, y: -4, size: 42, fill: '#2b241d', weight: 700, anchor: 'middle' });
-      T(card, en, { x: 84, y: 42, size: 30, fill: '#665c50', weight: 600, anchor: 'middle' });
+      mk('rect', { x: -175, y: -44, width: 350, height: 88, rx: 28, fill: '#ffffff', stroke: col, 'stroke-width': 4 }, b);
+      if (icon === 'circle') mk('circle', { cx: -125, cy: 0, r: 16, fill: col }, b);
+      else if (icon === 'star') mk('polygon', { points: '-125,-18 -119,-5 -106,-5 -116,4 -112,17 -125,9 -138,17 -134,4 -144,-5 -131,-5', fill: col }, b);
+      else if (icon === 'eye') {
+        mk('ellipse', { cx: -125, cy: 0, rx: 19, ry: 12, fill: '#ffffff', stroke: col, 'stroke-width': 3.5 }, b);
+        mk('circle', { cx: -125, cy: 0, r: 6.5, fill: col }, b);
+      } else {
+        mk('rect', { x: -139, y: -14, width: 28, height: 28, rx: 6, fill: col }, b);
+      }
+      T(b, label, { x: 24, y: 10, size: 28, fill: col, weight: 700, anchor: 'middle' });
       const tAt = m(mkName);
-      tw(card, { o: 1, s: 1 }, tAt, 0.36, back);
-      sfx('colours', tAt, 'pop', 0.45);
-      blobs.push({ b, phase: i * 0.7 });
+      tw(b, { o: 1, s: 1 }, tAt, 0.36, back);
+      sfx('u1_intro', tAt, 'pop', 0.45);
     });
 
     clockRun(t => {
-      blobs.forEach(({ b, phase }) => {
-        if (b.fc) {
-          const blink = ((t + phase) % 3.6 > 3.45) ? 0.15 : 1;
-          put(b.fc.eyeL, { s: blink });
-          put(b.fc.eyeR, { s: blink });
-          put(b.g, { r: 3 * Math.sin(t * 2.5 + phase) });
-        }
-      });
+      Doudou.animateIdle(exp, t, { armL: 26, armR: -120 + 18 * Math.sin(t * 6.5) });
     }, D, { tail: true });
   }, { lead: false }],
 
-  /* 3. 混色魔法动态演示 */
-  ['mixing_demo', '颜色的混合 Mixing colours', (m, D) => {
+  /* 2. 我的身体 My body（10 部位标注 + findWords 听音点身体） */
+  ['u1_body', '我的身体 My body', (m, D) => {
     const p = panel(0);
-    sc_bg(p, 'bg_magic_lab.jpg', 0.22);
-    sc_badge(p, '混色魔法 Mixing colours', 84, 64, '#9d4edd', 0.1);
-    sc_txt(p, '我们可以将两种颜色混合起来，得到新的颜色。', 800, 108, 0.2, { size: 30, fill: '#2b241d', anchor: 'middle' });
-    sc_txt(p, 'We can mix two colours to get a new colour.', 800, 146, 0.35, { size: 24, fill: '#665c50', anchor: 'middle' });
+    u1_bg(p, 'bg_u1_bedroom.jpg', 0.22);
+    u1_badge(p, '我的身体 My body', 84, 60, '#ff5a5f', 0.1);
+    const bar = u1_card(p, 470, 32, 1020, 58, { fill: 'rgba(255,255,255,0.94)', stroke: '#ff5a5f', sw: 3, rx: 29 });
+    T(bar, '听听小豆豆的提示，点一点身体部位（中文 + English）！', { x: 510, y: 38, size: 25, fill: '#2b241d', weight: 700, anchor: 'middle' });
 
-    const rows = [
-      ['mix1', 'res1', 310, '#00a8e8', '蓝色 blue', '#e63946', '红色 red', '#7b2cbf', '紫色 purple'],
-      ['mix2', 'res2', 620, '#ffd60a', '黄色 yellow', '#00a8e8', '蓝色 blue', '#57cc3a', '绿色 green'],
+    const expWrap = G(p, { x: 800, y: 510 });
+    const exp = Doudou.create(expWrap, { x: 0, y: 0, s: 1.72, hat: false, scarf: false, barefoot: true, eyeColor: 'brown', expr: 'happy', armL: 34, armR: -34 });
+
+    const bodySpecs = [
+      { mk: 'b_head',     x: 215, y: 205, zh: '头',   en: 'head',     col: '#ff5a5f', tx: 750, ty: 318, clip: 'w-head',     part: 'head',     side: 'right' },
+      { mk: 'b_shoulder', x: 215, y: 340, zh: '肩膀', en: 'shoulder', col: '#f77f00', tx: 742, ty: 468, clip: 'w-shoulder', part: 'shoulder', side: 'right' },
+      { mk: 'b_arm',      x: 215, y: 475, zh: '手臂', en: 'arm',      col: '#2d7dd2', tx: 706, ty: 510, clip: 'w-arm',      part: 'arm',      side: 'right' },
+      { mk: 'b_hand',     x: 215, y: 610, zh: '手',   en: 'hand',     col: '#9d4edd', tx: 676, ty: 558, clip: 'w-hand',     part: 'hand',     side: 'right' },
+      { mk: 'b_leg',      x: 215, y: 745, zh: '腿',   en: 'leg',      col: '#2bb673', tx: 766, ty: 636, clip: 'w-leg',      part: 'leg',      side: 'right' },
+
+      { mk: 'b_neck',     x: 1385, y: 205, zh: '颈项', en: 'neck',    col: '#e07a5f', tx: 816, ty: 452, clip: 'w-neck',     part: 'neck',     side: 'left' },
+      { mk: 'b_finger',   x: 1385, y: 340, zh: '手指', en: 'finger',  col: '#ef476f', tx: 936, ty: 562, clip: 'w-finger',   part: 'finger',   side: 'left' },
+      { mk: 'b_knee',     x: 1385, y: 475, zh: '膝盖', en: 'knee',    col: '#00a8e8', tx: 834, ty: 675, clip: 'w-knee',     part: 'knee',     side: 'left' },
+      { mk: 'b_foot',     x: 1385, y: 610, zh: '脚',   en: 'foot',    col: '#7b2cbf', tx: 838, ty: 758, clip: 'w-foot',     part: 'foot',     side: 'left' },
+      { mk: 'b_toe',      x: 1385, y: 745, zh: '脚趾', en: 'toe',     col: '#2a9d8f', tx: 862, ty: 778, clip: 'w-toe',      part: 'toe',      side: 'left' },
     ];
 
-    rows.forEach(([mkMix, mkRes, ry, c1, l1, c2, l2, c3, l3]) => {
-      const box = sc_panelCard(p, 150, ry - 115, 1300, 245, { fill: 'rgba(255,253,247,0.9)', stroke: '#e8d5f5', sw: 4 });
-      const b1 = sc_blob(p, 350, ry, c1, { s: 1.05, lightFace: true });
-      const b2 = sc_blob(p, 720, ry, c2, { s: 1.05, lightFace: c2 !== '#ffd60a' });
-      const b3 = sc_blob(p, 1210, ry, c3, { s: 1.15, lightFace: c3 !== '#57cc3a' });
-
-      put(b1.g, { o: 0, s: 0.7 }); tw(b1.g, { o: 1, s: 1 }, m(mkMix), 0.35, back);
-      put(b2.g, { o: 0, s: 0.7 }); tw(b2.g, { o: 1, s: 1 }, m(mkMix, 0.7), 0.35, back);
-
-      const plus = sc_txt(p, '+', 535, ry + 18, m(mkMix, 0.5), { size: 64, fill: '#2b241d', anchor: 'middle' });
-      const eq = sc_txt(p, '=', 955, ry + 18, m(mkRes, -0.3), { size: 64, fill: '#2b241d', anchor: 'middle' });
-      sc_txt(p, l1, 350, ry + 96, m(mkMix), { size: 26, fill: '#2b241d', anchor: 'middle' });
-      sc_txt(p, l2, 720, ry + 96, m(mkMix, 0.7), { size: 26, fill: '#2b241d', anchor: 'middle' });
-
-      // 魔法混合闪烁光环 + 结果弹出
-      const magic = G(p, { x: 1210, y: ry, o: 0, s: 0.4 });
-      mk('circle', { cx: 0, cy: 0, r: 96, fill: 'none', stroke: '#ffd60a', 'stroke-width': 6, 'stroke-dasharray': '14 10' }, magic);
-      tw(magic, { o: 1, s: 1.15, r: 90 }, m(mkRes, -0.35), 0.55, out);
-      tw(magic, { o: 0, s: 1.4 }, m(mkRes, 0.45), 0.4);
-
-      put(b3.g, { o: 0, s: 0.3 });
-      tw(b3.g, { o: 1, s: 1.15 }, m(mkRes), 0.45, back);
-      sc_txt(p, l3, 1210, ry + 96, m(mkRes, 0.2), { size: 30, fill: c3, anchor: 'middle' });
-      sfx('mixing_demo', m(mkRes), 'chime', 0.55);
-      void box; void plus; void eq;
+    const bodyMap = {};
+    bodySpecs.forEach(sp => {
+      const tAt = m(sp.mk);
+      const { g } = u1_makeTag(p, sp, tAt);
+      sfx('u1_body', tAt, 'pop', 0.42);
+      bodyMap[sp.part] = g;
+      g.addEventListener('pointerdown', () => {
+        exp.highlightPart(sp.part, true);
+        setTimeout(() => exp.highlightPart(sp.part, false), 900);
+      });
     });
-  }, { lead: false }],
-
-  /* 4. 混色猜一猜互动题（选项带彩色圆块，答对左边立即变出笑脸颜料结果） */
-  ['mixing_quiz', '混色猜一猜 Mixing Challenge', (m) => {
-    const p = panel(0);
-    sc_bg(p, 'bg_magic_lab.jpg', 0.22);
-    sc_badge(p, '小小色彩魔法师', 84, 64, '#ff5a5f', 0.1);
-    sc_txt(p, '混合在一起，会得到什么颜色？', 100, 148, 0.2, { size: 30, fill: '#2b241d' });
-
-    const puzzles = [
-      ['#e63946', '红色 red', '#ffd60a', '黄色 yellow', '#ff851b', '橙色 orange', false],
-      ['#2b2b2b', '黑色 black', '#ffffff', '白色 white', '#9e9e9e', '灰色 grey', true],
-      ['#e63946', '红色 red', '#ffffff', '白色 white', '#ff9ebb', '粉红色 pink', false],
+    u1BodyThings = [
+      { g: bodyMap.head,     word: '头',   clip: 'w-head',     side: 'right' },
+      { g: bodyMap.shoulder, word: '肩膀', clip: 'w-shoulder', side: 'right' },
+      { g: bodyMap.arm,      word: '手臂', clip: 'w-arm',      side: 'right' },
+      { g: bodyMap.hand,     word: '手',   clip: 'w-hand',     side: 'right' },
+      { g: bodyMap.leg,      word: '腿',   clip: 'w-leg',      side: 'right' },
+      { g: bodyMap.neck,     word: '颈项', clip: 'w-neck',     side: 'left' },
+      { g: bodyMap.finger,   word: '手指', clip: 'w-finger',   side: 'left' },
+      { g: bodyMap.knee,     word: '膝盖', clip: 'w-knee',     side: 'left' },
+      { g: bodyMap.foot,     word: '脚',   clip: 'w-foot',     side: 'left' },
+      { g: bodyMap.toe,      word: '脚趾', clip: 'w-toe',      side: 'left' },
     ];
-
-    S.mixRows = [];
-    puzzles.forEach(([c1, n1, c2, n2, cres, ansName, lightAns], i) => {
-      const py = 260 + i * 195;
-      const card = sc_panelCard(p, 90, py - 78, 690, 165, { fill: 'rgba(255,253,247,0.93)', stroke: '#e6d4b8', sw: 3, rx: 24 });
-      sc_blob(card, 110, 72, c1, { s: 0.6, lightFace: c1 !== '#ffffff' });
-      T(card, n1, { x: 110, y: 140, size: 22, fill: '#2b241d', weight: 700, anchor: 'middle' });
-      T(card, '+', { x: 225, y: 84, size: 44, fill: '#2b241d', weight: 700, anchor: 'middle' });
-      sc_blob(card, 340, 72, c2, { s: 0.6, stroke: c2 === '#ffffff' ? '#2b241d' : 'none', sw: c2 === '#ffffff' ? 2.5 : 0, lightFace: false });
-      T(card, n2, { x: 340, y: 140, size: 22, fill: '#2b241d', weight: 700, anchor: 'middle' });
-      T(card, '=', { x: 460, y: 84, size: 44, fill: '#2b241d', weight: 700, anchor: 'middle' });
-
-      // 问号占位（用中性蓝色虚线，不提前剧透答案颜色）
-      const qCircle = mk('circle', { cx: 580, cy: 76, r: 48, fill: '#f7f1e3', stroke: '#2d7dd2', 'stroke-width': 4, 'stroke-dasharray': '8 6' }, card);
-      const qText = T(card, '?', { x: 580, y: 92, size: 48, fill: '#2d7dd2', weight: 700, anchor: 'middle' });
-
-      // 隐藏的结果笑脸颜料块，答对时弹出
-      const ansWrap = G(card, { x: 580, y: 72, o: 0, s: 0.4 });
-      sc_blob(ansWrap, 0, 0, cres, { s: 0.64, lightFace: lightAns });
-      const ansLbl = T(card, ansName, { x: 580, y: 140, size: 22, fill: '#2b241d', weight: 700, anchor: 'middle', o: 0 });
-      S.mixRows.push({ qCircle, qText, ansWrap, ansLbl });
-
-      put(card, { o: 0, y: py - 60 });
-      tw(card, { o: 1, y: py - 78 }, m('mq', i * 0.45), 0.4, out);
-    });
-  }, {
-    lead: false,
-    hold: 1.8,
-    ask: done => {
-      const revealMix = idx => {
-        const row = S.mixRows?.[idx];
-        if (!row) return;
-        fx(row.qCircle, { o: 0 }, 0, 0.2);
-        fx(row.qText, { o: 0 }, 0, 0.2);
-        fx(row.ansWrap, { o: 1, s: 1 }, 0.05, 0.35, back);
-        fx(row.ansLbl, { o: 1 }, 0.12, 0.25);
-        sc_playSfx('chime', 0.6);
-      };
-      return quiz({ x: 830, y: 155, w: 680, cls: 'side' }, [
-        {
-          id: 'c-mix-ry',
-          prompt: ['魔法 1：', sc_swatch('#e63946'), '红色 + ', sc_swatch('#ffd60a'), '黄色 = ？'],
-          build: choice(
-            [
-              [sc_swatch('#ff851b'), '橙色 orange'],
-              [sc_swatch('#57cc3a'), '绿色 green'],
-              [sc_swatch('#00a8e8'), '蓝色 blue'],
-            ],
-            0,
-            '答对了！红色加黄色会变成像橘子一样的橙色（orange）！',
-            [null, '绿色是黄色和蓝色变出来的哦！', '蓝色是原本就有的颜色，红+黄会变暖色调的橙色。'],
-            () => revealMix(0)
-          ),
-        },
-        {
-          id: 'c-mix-bw',
-          prompt: ['魔法 2：', sc_swatch('#2b2b2b'), '黑色 + ', sc_swatch('#ffffff'), '白色 = ？'],
-          build: choice(
-            [
-              [sc_swatch('#9e9e9e'), '灰色 grey'],
-              [sc_swatch('#7b2cbf'), '紫色 purple'],
-              [sc_swatch('#ffd60a'), '黄色 yellow'],
-            ],
-            0,
-            '真棒！深深的黑色加上亮亮的白色，就变成温和的灰色（grey）！',
-            [null, '紫色需要蓝色和红色哦。', '黑加白不会变黄，而是变灰！'],
-            () => revealMix(1)
-          ),
-        },
-        {
-          id: 'c-mix-rw',
-          prompt: ['魔法 3：', sc_swatch('#e63946'), '红色 + ', sc_swatch('#ffffff'), '白色 = ？'],
-          build: choice(
-            [
-              [sc_swatch('#ff9ebb'), '粉红色 pink'],
-              [sc_swatch('#a0522d'), '褐色 brown'],
-              [sc_swatch('#2b2b2b'), '黑色 black'],
-            ],
-            0,
-            '太厉害了！红色加白色变浅了，就变成了可爱的粉红色（pink）！',
-            [null, '白色会让红色变得柔和浅淡，变成粉红色哦。', '加上白色是变亮，不会变成黑色。'],
-            () => revealMix(2)
-          ),
-        },
-      ], done, '混色魔法题');
-    },
-  }],
-
-  /* 5. 立体形状与平面形状 */
-  ['shapes', '形状 Shapes', (m, D) => {
-    const p = panel(0);
-    sc_bg(p, 'bg_shape_park.jpg', 0.24);
-    sc_badge(p, '形状 Shapes', 84, 62, '#19a7e0', 0.1);
-
-    // 立体形状栏
-    const box3d = sc_panelCard(p, 90, 120, 1420, 340, { fill: 'rgba(255,253,247,0.9)', stroke: '#bfe6f7', sw: 4 });
-    T(box3d, '立体形状 · 3D shapes（胖乎乎可以抱起来的）', { x: 36, y: 46, size: 28, fill: '#0b87ba', weight: 700 });
-    const s3dList = [
-      ['cube', '正方体', 'cube', 260],
-      ['cuboid', '长方体', 'cuboid', 605],
-      ['sphere', '球体', 'sphere', 960],
-      ['pyramid', '正方棱锥体', 'pyramid', 1310],
-    ];
-    const chars = [];
-    s3dList.forEach(([kind, zh, en, sx], i) => {
-      const ch = sc_drawShape(p, kind, sx, 290, { s: 1, label: zh, en });
-      put(ch.g, { o: 0, s: 0.7 });
-      const tAt = m('s3d', i * 1.6);
-      tw(ch.g, { o: 1, s: 1 }, tAt, 0.4, back);
-      sfx('shapes', tAt, 'boing', 0.4);
-      chars.push({ ch, y0: 290, phase: i * 0.8 });
-    });
-
-    // 平面形状栏
-    const box2d = sc_panelCard(p, 90, 495, 1420, 325, { fill: 'rgba(255,253,247,0.9)', stroke: '#f5d2e1', sw: 4 });
-    T(box2d, '平面形状 · 2D shapes（平平的像纸片）', { x: 36, y: 46, size: 28, fill: '#d6336c', weight: 700 });
-    const s2dList = [
-      ['square', '正方形', 'square', 260],
-      ['rectangle', '长方形', 'rectangle', 605],
-      ['circle', '圆', 'circle', 960],
-      ['triangle', '三角形', 'triangle', 1310],
-    ];
-    s2dList.forEach(([kind, zh, en, sx], i) => {
-      const ch = sc_drawShape(p, kind, sx, 655, { s: 1, label: zh, en });
-      put(ch.g, { o: 0, s: 0.7 });
-      const tAt = m('s2d', i * 1.5);
-      tw(ch.g, { o: 1, s: 1 }, tAt, 0.4, back);
-      sfx('shapes', tAt, 'pop', 0.45);
-      chars.push({ ch, y0: 655, phase: (i + 4) * 0.8 });
-    });
 
     clockRun(t => {
-      chars.forEach(({ ch, y0, phase }) => {
-        put(ch.g, { y: y0 + 5 * Math.sin(t * 3 + phase) });
-        if (ch.fc) {
-          const blink = ((t + phase) % 3.5 > 3.35) ? 0.15 : 1;
-          put(ch.fc.eyeL, { s: blink });
-          put(ch.fc.eyeR, { s: blink });
-        }
-      });
-    }, D, { tail: true });
-    void box3d; void box2d;
-  }, { lead: false }],
-
-  /* 6. 互动游戏：阳光公园听音找形状 */
-  ['shape_find', '游戏 · 听音找形状朋友', (m, D) => {
-    const p = panel(0);
-    sc_bg(p, 'bg_shape_park.jpg', 0.08);
-    sc_badge(p, '互动游戏 · 听音找形状', 84, 62, '#2bb673', 0.1);
-    const bar = sc_panelCard(p, 480, 32, 960, 60, { fill: 'rgba(255,255,255,0.92)', stroke: '#2bb673', sw: 3, rx: 30 });
-    T(bar, '听听小探险家的声音，点一点正确的形状朋友！', { x: 480, y: 39, size: 28, fill: '#2b241d', weight: 700, anchor: 'middle' });
-
-    const sTri = sc_drawShape(p, 'triangle', 270, 290, { s: 1.35 });
-    const sCir = sc_drawShape(p, 'circle', 800, 260, { s: 1.32 });
-    const sSq = sc_drawShape(p, 'square', 1320, 290, { s: 1.32 });
-    const sRect = sc_drawShape(p, 'rectangle', 360, 635, { s: 1.2 });
-    const sCube = sc_drawShape(p, 'cube', 820, 635, { s: 1.35 });
-    const sSph = sc_drawShape(p, 'sphere', 1270, 635, { s: 1.32 });
-
-    sc_shapeThings = [
-      { g: sTri.g, word: '三角形', clip: 'w-triangle', side: 'below' },
-      { g: sCir.g, word: '圆形', clip: 'w-circle', side: 'below' },
-      { g: sSq.g, word: '正方形', clip: 'w-square', side: 'below' },
-      { g: sRect.g, word: '长方形', clip: 'w-rectangle', side: 'above' },
-      { g: sCube.g, word: '正方体', clip: 'w-cube', side: 'above' },
-      { g: sSph.g, word: '球体', clip: 'w-sphere', side: 'above' },
-    ];
-
-    const list = [
-      [sTri, 290, 0], [sCir, 260, 1], [sSq, 290, 2],
-      [sRect, 635, 3], [sCube, 635, 4], [sSph, 635, 5],
-    ];
-    clockRun(t => {
-      list.forEach(([ch, y0, ph]) => {
-        put(ch.g, { y: y0 + 6 * Math.sin(t * 2.6 + ph) });
-        if (ch.fc) {
-          const blink = ((t + ph) % 3.2 > 3.05) ? 0.15 : 1;
-          put(ch.fc.eyeL, { s: blink });
-          put(ch.fc.eyeR, { s: blink });
-        }
-      });
+      Doudou.animateIdle(exp, t, { armL: 34, armR: -34 });
     }, D, { tail: true });
   }, {
     lead: false,
-    ask: done => findWords(sc_shapeThings, SC_SHAPE_ASKS, done),
+    ask: done => findWords(u1BodyThings, U1_BODY_ASKS, done, { end: 'q-body-done', there: 'q-there', minBox: 110 }),
     video: false,
   }],
 
-  /* 7. 东西的分类 Grouping things */
-  ['grouping', '东西的分类 Grouping things', (m) => {
+  /* 3. 我的脸 My face（圆镜特写 + 9 五官 findWords 互动） */
+  ['u1_face', '我的脸 My face', (m, D) => {
     const p = panel(0);
-    sc_bg(p, 'bg_shape_park.jpg', 0.25);
-    sc_badge(p, '分类大本领 Grouping', 84, 62, '#2d7dd2', 0.1);
+    u1_bg(p, 'bg_u1_bathroom.jpg', 0.16);
+    u1_badge(p, '我的脸 My face', 84, 60, '#f77f00', 0.1);
+    const bar = u1_card(p, 470, 32, 1020, 58, { fill: 'rgba(255,255,255,0.94)', stroke: '#f77f00', sw: 3, rx: 29 });
+    T(bar, '照一照小镜子，听声音点一点豆豆的五官！', { x: 510, y: 38, size: 25, fill: '#2b241d', weight: 700, anchor: 'middle' });
 
-    // 上半区：按颜色分类
-    const topCard = sc_panelCard(p, 90, 118, 1420, 345, { fill: 'rgba(255,253,247,0.92)', stroke: '#ffd166', sw: 4 });
-    T(topCard, '1. 根据颜色分类 · Group by colour', { x: 36, y: 46, size: 28, fill: '#b87400', weight: 700 });
-    // 黄色区
-    mk('rect', { x: 60, y: 74, width: 590, height: 242, rx: 24, fill: '#fff8d6', stroke: '#f4b400', 'stroke-width': 3 }, topCard);
-    T(topCard, '黄色 Yellow', { x: 355, y: 110, size: 26, fill: '#996200', weight: 700, anchor: 'middle' });
-    // 跳绳 + 铲子
-    const rope = G(topCard, { x: 210, y: 210, o: 0, s: 0.7 });
-    mk('path', { d: 'M-50 -20 C-60 40 60 40 50 -20 C40 -60 -40 -60 -50 -20 Z', fill: 'none', stroke: '#f4b400', 'stroke-width': 10 }, rope);
-    mk('rect', { x: -64, y: -34, width: 16, height: 34, rx: 6, fill: '#e09f00' }, rope);
-    mk('rect', { x: 48, y: -34, width: 16, height: 34, rx: 6, fill: '#e09f00' }, rope);
-    T(rope, '跳绳', { x: 0, y: 74, size: 22, fill: '#665c50', weight: 700, anchor: 'middle' });
-    tw(rope, { o: 1, s: 1 }, m('g_col', 1.2), 0.4, back);
-
-    const shovel = G(topCard, { x: 490, y: 210, o: 0, s: 0.7 });
-    mk('rect', { x: -8, y: -48, width: 16, height: 56, rx: 6, fill: '#ffd60a', stroke: '#b88600', 'stroke-width': 2.5 }, shovel);
-    mk('path', { d: 'M-26 4 H26 L20 46 Q0 58 -20 46 Z', fill: '#ffd60a', stroke: '#b88600', 'stroke-width': 2.5 }, shovel);
-    T(shovel, '小铲子', { x: 0, y: 74, size: 22, fill: '#665c50', weight: 700, anchor: 'middle' });
-    tw(shovel, { o: 1, s: 1 }, m('g_col', 2.0), 0.4, back);
-
-    // 红色区
-    mk('rect', { x: 760, y: 74, width: 590, height: 242, rx: 24, fill: '#ffeef0', stroke: '#ff5a5f', 'stroke-width': 3 }, topCard);
-    T(topCard, '红色 Red', { x: 1055, y: 110, size: 26, fill: '#b8252b', weight: 700, anchor: 'middle' });
-    const bucket = G(topCard, { x: 920, y: 210, o: 0, s: 0.7 });
-    mk('path', { d: 'M-42 -26 H42 L32 42 H-32 Z', fill: '#e63946', stroke: '#2b241d', 'stroke-width': 3 }, bucket);
-    mk('path', { d: 'M-42 -26 Q0 -64 42 -26', fill: 'none', stroke: '#2b241d', 'stroke-width': 4 }, bucket);
-    T(bucket, '水桶', { x: 0, y: 74, size: 22, fill: '#665c50', weight: 700, anchor: 'middle' });
-    tw(bucket, { o: 1, s: 1 }, m('g_col', 3.4), 0.4, back);
-
-    const pin = G(topCard, { x: 1190, y: 210, o: 0, s: 0.7 });
-    mk('path', { d: 'M-14 -48 C-14 -58 14 -58 14 -48 L10 -22 C24 -6 24 28 16 44 H-16 C-24 28 -24 -6 -10 -22 Z', fill: '#e63946', stroke: '#2b241d', 'stroke-width': 3 }, pin);
-    T(pin, '保龄球瓶', { x: 0, y: 74, size: 22, fill: '#665c50', weight: 700, anchor: 'middle' });
-    tw(pin, { o: 1, s: 1 }, m('g_col', 4.3), 0.4, back);
-    sfx('grouping', m('g_col', 1.2), 'whoosh', 0.45);
-
-    // 下半区：按形状分类
-    const botCard = sc_panelCard(p, 90, 490, 1420, 330, { fill: 'rgba(255,253,247,0.92)', stroke: '#a8e0c2', sw: 4 });
-    T(botCard, '2. 根据形状分类 · Group by shape', { x: 36, y: 46, size: 28, fill: '#1b7a4c', weight: 700 });
-    // 圆形篮子
-    mk('rect', { x: 60, y: 74, width: 590, height: 228, rx: 24, fill: '#eefbf3', stroke: '#2bb673', 'stroke-width': 3 }, botCard);
-    T(botCard, '圆形 Round', { x: 355, y: 110, size: 26, fill: '#1b7a4c', weight: 700, anchor: 'middle' });
-    const ball = G(botCard, { x: 215, y: 198, o: 0, s: 0.7 });
-    mk('circle', { cx: 0, cy: 0, r: 42, fill: '#c8e636', stroke: '#2b241d', 'stroke-width': 3 }, ball);
-    mk('path', { d: 'M-28 -30 Q0 0 -28 30 M28 -30 Q0 0 28 30', fill: 'none', stroke: '#ffffff', 'stroke-width': 4 }, ball);
-    T(ball, '网球', { x: 0, y: 68, size: 22, fill: '#665c50', weight: 700, anchor: 'middle' });
-    tw(ball, { o: 1, s: 1 }, m('g_shp', 1.2), 0.4, back);
-
-    const marble = G(botCard, { x: 490, y: 198, o: 0, s: 0.7 });
-    mk('circle', { cx: 0, cy: 0, r: 36, fill: '#274c9b', stroke: '#2b241d', 'stroke-width': 3 }, marble);
-    mk('path', { d: 'M-16 -20 Q6 0 -10 22', fill: 'none', stroke: '#8ecae6', 'stroke-width': 7, 'stroke-linecap': 'round' }, marble);
-    T(marble, '弹珠', { x: 0, y: 68, size: 22, fill: '#665c50', weight: 700, anchor: 'middle' });
-    tw(marble, { o: 1, s: 1 }, m('g_shp', 2.0), 0.4, back);
-
-    // 方形篮子
-    mk('rect', { x: 760, y: 74, width: 590, height: 228, rx: 24, fill: '#eef6ff', stroke: '#2d7dd2', 'stroke-width': 3 }, botCard);
-    T(botCard, '方形 Square', { x: 1055, y: 110, size: 26, fill: '#1b5fa8', weight: 700, anchor: 'middle' });
-    const chess = G(botCard, { x: 920, y: 198, o: 0, s: 0.7 });
-    mk('rect', { x: -42, y: -42, width: 84, height: 84, rx: 6, fill: '#ffffff', stroke: '#2b241d', 'stroke-width': 3 }, chess);
-    for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) if ((r + c) % 2 === 0) mk('rect', { x: -42 + c * 21, y: -42 + r * 21, width: 21, height: 21, fill: '#2b241d' }, chess);
-    T(chess, '棋盘', { x: 0, y: 68, size: 22, fill: '#665c50', weight: 700, anchor: 'middle' });
-    tw(chess, { o: 1, s: 1 }, m('g_shp', 3.4), 0.4, back);
-
-    const hankie = G(botCard, { x: 1190, y: 198, o: 0, s: 0.7 });
-    mk('rect', { x: -40, y: -40, width: 80, height: 80, rx: 8, fill: '#ffcad4', stroke: '#d6336c', 'stroke-width': 3 }, hankie);
-    mk('path', { d: 'M-40 -12 H40 M-40 12 H40 M-12 -40 V40 M12 -40 V40', stroke: '#ffbe0b', 'stroke-width': 5, opacity: 0.75 }, hankie);
-    T(hankie, '小手帕', { x: 0, y: 68, size: 22, fill: '#665c50', weight: 700, anchor: 'middle' });
-    tw(hankie, { o: 1, s: 1 }, m('g_shp', 4.2), 0.4, back);
-    sfx('grouping', m('g_shp', 1.2), 'boing', 0.45);
-  }, { lead: false }],
-
-  /* 8. 影子大挑战（支持触摸/鼠标拖拉积木拼入黑色影子 + 轻点自动飞入） */
-  ['hots_shadow', '思维挑战 · 影子拼图', (m) => {
-    const p = panel(0);
-    sc_bg(p, 'bg_shadow_stage.jpg', 0.14);
-    sc_badge(p, '思维挑战 · 影子拼图', 84, 62, '#ff9f1c', 0.1);
-
-    const board = sc_panelCard(p, 80, 115, 800, 720, { fill: 'rgba(255,253,247,0.94)', stroke: '#ffd166', sw: 5, rx: 32 });
-    T(board, '拖动下方积木，拼进黑色影子里！', { x: 400, y: 46, size: 28, fill: '#2b241d', weight: 700, anchor: 'middle' });
-    mk('path', { d: 'M36 338 H764', stroke: '#ead9bc', 'stroke-width': 3, 'stroke-dasharray': '10 8' }, board);
-
-    // 黑色小车目标影子（与可拖拉积木保持 1:1 精确尺寸，舞台坐标）
-    const shadow = G(p, { x: 0, y: 0, o: 0 });
-    mk('polygon', { points: '480,176 344,256 616,256', fill: '#181818' }, shadow);
-    mk('rect', { x: 344, y: 254, width: 272, height: 104, rx: 4, fill: '#181818' }, shadow);
-    mk('circle', { cx: 408, cy: 374, r: 34, fill: '#181818' }, shadow);
-    mk('circle', { cx: 552, cy: 374, r: 34, fill: '#181818' }, shadow);
-    show(shadow, 0.25, 0.4);
-
-    // 静态预览积木托盘（进入互动问答时隐藏，由 qlayer 接管拖拉交互）
-    const tray = G(p, { x: 0, y: 0, o: 0 });
-    S.shadowTray = tray;
-    const drawTri = (par) => mk('polygon', { points: '0,-56 -136,24 136,24', fill: '#7b2cbf', stroke: '#2b241d', 'stroke-width': 3.5, 'stroke-linejoin': 'round' }, par);
-    const drawRect = (par) => mk('rect', { x: -136, y: -52, width: 272, height: 104, rx: 6, fill: '#ff851b', stroke: '#2b241d', 'stroke-width': 3.5 }, par);
-    const drawCir = (par) => mk('circle', { cx: 0, cy: 0, r: 34, fill: '#ffd60a', stroke: '#2b241d', 'stroke-width': 3.5 }, par);
-    const drawSq = (par) => mk('rect', { x: -52, y: -52, width: 104, height: 104, rx: 6, fill: '#8ac926', stroke: '#2b241d', 'stroke-width': 3.5 }, par);
-
-    const previewSpecs = [
-      [drawTri, 270, 565, '紫色三角形', '#7b2cbf', 54],
-      [drawRect, 665, 565, '橙色长方形', '#c85a00', 78],
-      [drawCir, 210, 735, '黄色圆形 1', '#b88600', 60],
-      [drawSq, 480, 735, '绿色正方形', '#4f772d', 78],
-      [drawCir, 745, 735, '黄色圆形 2', '#b88600', 60],
-    ];
-    previewSpecs.forEach(([fn, px, py, lbl, lcol, ly]) => {
-      const g = G(tray, { x: px, y: py });
-      fn(g);
-      T(g, lbl, { x: 0, y: ly, size: 22, fill: lcol, weight: 700, anchor: 'middle' });
+    const { inst: faceExp } = Doudou.createFacePortrait(p, {
+      x: 800, y: 495, r: 235,
+      bg: '#fff8ec', frameColor: '#f2cf8d', showFrame: true,
+      hat: false, scarf: true, eyeColor: 'brown', expr: 'happy',
     });
-    show(tray, 0.45, 0.4);
+
+    const faceSpecs = [
+      { mk: 'f_hair',     x: 215, y: 205, zh: '头发', en: 'hair',     col: '#6b4029', tx: 721, ty: 376, clip: 'w-hair',     part: 'hair',     side: 'right' },
+      { mk: 'f_forehead', x: 215, y: 340, zh: '额头', en: 'forehead', col: '#ff9f1c', tx: 765, ty: 419, clip: 'w-forehead', part: 'forehead', side: 'right' },
+      { mk: 'f_eyebrow',  x: 215, y: 475, zh: '眉毛', en: 'eyebrow',  col: '#9d4edd', tx: 738, ty: 439, clip: 'w-eyebrow',  part: 'eyebrow',  side: 'right' },
+      { mk: 'f_eye',      x: 215, y: 610, zh: '眼睛', en: 'eye',      col: '#2d7dd2', tx: 738, ty: 501, clip: 'w-eye',      part: 'eye',      side: 'right' },
+      { mk: 'f_ear',      x: 215, y: 745, zh: '耳朵', en: 'ear',      col: '#e76f51', tx: 631, ty: 535, clip: 'w-ear',      part: 'ear',      side: 'right' },
+
+      { mk: 'f_nose',     x: 1385, y: 245, zh: '鼻子', en: 'nose',    col: '#2bb673', tx: 800, ty: 532, clip: 'w-nose',     part: 'nose',     side: 'left' },
+      { mk: 'f_cheek',    x: 1385, y: 405, zh: '脸颊', en: 'cheek',   col: '#ff5a5f', tx: 899, ty: 551, clip: 'w-cheek',    part: 'cheek',    side: 'left' },
+      { mk: 'f_mouth',    x: 1385, y: 565, zh: '嘴',   en: 'mouth',   col: '#d62828', tx: 837, ty: 584, clip: 'w-mouth',    part: 'mouth',    side: 'left' },
+      { mk: 'f_teeth',    x: 1385, y: 725, zh: '牙齿', en: 'teeth',   col: '#0096c7', tx: 800, ty: 591, clip: 'w-teeth',    part: 'mouth',    side: 'left' },
+    ];
+
+    const faceMap = {};
+    faceSpecs.forEach(sp => {
+      const tAt = m(sp.mk);
+      const { g } = u1_makeTag(p, sp, tAt);
+      sfx('u1_face', tAt, 'pop', 0.42);
+      faceMap[sp.zh] = g;
+      g.addEventListener('pointerdown', () => {
+        if (sp.zh === '牙齿') faceExp.setExpr('teeth');
+        faceExp.highlightPart(sp.part, true);
+        setTimeout(() => faceExp.highlightPart(sp.part, false), 900);
+      });
+    });
+    u1FaceThings = [
+      { g: faceMap['头发'], word: '头发', clip: 'w-hair',     side: 'right' },
+      { g: faceMap['额头'], word: '额头', clip: 'w-forehead', side: 'right' },
+      { g: faceMap['眉毛'], word: '眉毛', clip: 'w-eyebrow',  side: 'right' },
+      { g: faceMap['眼睛'], word: '眼睛', clip: 'w-eye',      side: 'right' },
+      { g: faceMap['耳朵'], word: '耳朵', clip: 'w-ear',      side: 'right' },
+      { g: faceMap['鼻子'], word: '鼻子', clip: 'w-nose',     side: 'left' },
+      { g: faceMap['脸颊'], word: '脸颊', clip: 'w-cheek',    side: 'left' },
+      { g: faceMap['嘴'],   word: '嘴',   clip: 'w-mouth',    side: 'left' },
+      { g: faceMap['牙齿'], word: '牙齿', clip: 'w-teeth',    side: 'left' },
+    ];
+
+    const tTeeth = m('f_teeth');
+    clockRun(t => {
+      Doudou.animateIdle(faceExp, t, { armL: 6, armR: -6 });
+      if (t >= tTeeth) faceExp.setExpr('teeth');
+    }, D, { tail: true });
+  }, {
+    lead: false,
+    ask: done => findWords(u1FaceThings, U1_FACE_ASKS, done, { end: 'q-face-done', there: 'q-there', minBox: 110 }),
+    video: false,
+  }],
+
+  /* 4. 刷牙小卫士（4 选 2 拖拽/轻点给豆豆刷牙起泡泡） */
+  ['u1_brush', '刷牙小卫士 Brush Teeth', (m, D) => {
+    const p = panel(0);
+    u1_bg(p, 'bg_u1_bathroom.jpg', 0.14);
+    u1_badge(p, '综合互动 · 刷牙小卫士', 84, 60, '#00a8e8', 0.1);
+
+    const board = u1_card(p, 80, 115, 800, 720, { fill: 'rgba(255,253,247,0.95)', stroke: '#90e0ef', sw: 5, rx: 32 });
+    T(board, '把刷牙用的两样物品拖给豆豆，或轻点它们！', { x: 400, y: 46, size: 26, fill: '#2b241d', weight: 700, anchor: 'middle' });
+    mk('path', { d: 'M36 530 H764', stroke: '#d8ecf2', 'stroke-width': 3, 'stroke-dasharray': '10 8' }, board);
+    mk('rect', { x: 260, y: 120, width: 280, height: 325, rx: 140, fill: '#f2fbff', stroke: '#38bdf8', 'stroke-width': 3.5, 'stroke-dasharray': '10 8' }, board);
+
+    const expWrap = G(p, { x: 480, y: 390 });
+    const exp = Doudou.create(expWrap, { x: 0, y: 0, s: 1.32, hat: false, scarf: false, eyeColor: 'brown', expr: 'teeth', armL: 16, armR: -16 });
+
+    const tray = G(p, { x: 0, y: 0, o: 0 });
+    S.brushTray = tray;
+    const previewSpecs = [
+      ['toothbrush', 180, 715, '牙刷 toothbrush', '#0284c7'],
+      ['comb',       380, 715, '梳子 comb',       '#b45309'],
+      ['toothpaste', 580, 715, '牙膏 toothpaste', '#db2777'],
+      ['soap',       780, 715, '香皂 soap',       '#0f766e'],
+    ];
+    previewSpecs.forEach(([kind, px, py, lbl, lcol]) => {
+      const g = G(tray, { x: px, y: py });
+      mk('rect', { x: -78, y: -56, width: 156, height: 120, rx: 22, fill: '#ffffff', stroke: '#e2e8f0', 'stroke-width': 3 }, g);
+      u1_drawBrushItem(g, kind);
+      T(g, lbl, { x: 0, y: 84, size: 20, fill: lcol, weight: 700, anchor: 'middle' });
+    });
+    show(tray, m('br_items', 0), 0.4);
+    S.brushDoudou = exp;
+
+    clockRun(t => {
+      Doudou.animateIdle(exp, t, { armL: 16, armR: -16 });
+    }, D, { tail: true });
     void board;
   }, {
     lead: false,
-    hold: 2.0,
+    hold: 1.6,
     ask: done => quiz({ x: 915, y: 175, w: 605, cls: 'side' }, [{
-      id: 'c-hots-drag',
-      prompt: ['把左边正确的积木拖进黑色影子里，拼出小屋子车！'],
+      id: 'u1-q-brush',
+      prompt: ['圈出刷牙时会用到的两样物品 · 拖给豆豆或轻点它们！'],
       build: (body, api) => {
-        if (S.shadowTray) S.shadowTray.style.display = 'none';
+        if (S.brushTray) S.brushTray.style.display = 'none';
         const L = qlayer();
-        const progEl = h('div', 'sc-progress', '已拼好 0 / 4 块 · 拖动积木到黑影上，或轻点积木自动飞入');
+        const progEl = h('div', 'sc-progress', '已找到 0 / 2 样刷牙好帮手 · 拖给豆豆或轻点物品');
         body.append(progEl);
 
         const stage = $('stage');
@@ -657,98 +383,80 @@ const BEATS = [
         };
 
         const SLOTS = {
-          roof: { x: 480, y: 232, filled: null },
-          body: { x: 480, y: 306, filled: null },
-          wheelL: { x: 408, y: 374, filled: null },
-          wheelR: { x: 552, y: 374, filled: null },
+          left:  { x: 345, y: 380, filled: false },
+          right: { x: 615, y: 380, filled: false },
         };
 
-        const pieceDefs = [
-          {
-            id: 'tri', kind: 'triangle', label: '紫色三角形', lblCol: '#7b2cbf', lblY: 54, home: [270, 565], targets: ['roof'],
-            draw: g => mk('polygon', { points: '0,-56 -136,24 136,24', fill: '#7b2cbf', stroke: '#2b241d', 'stroke-width': 3.5, 'stroke-linejoin': 'round' }, g),
-          },
-          {
-            id: 'rect', kind: 'rectangle', label: '橙色长方形', lblCol: '#c85a00', lblY: 78, home: [665, 565], targets: ['body'],
-            draw: g => mk('rect', { x: -136, y: -52, width: 272, height: 104, rx: 6, fill: '#ff851b', stroke: '#2b241d', 'stroke-width': 3.5 }, g),
-          },
-          {
-            id: 'cir1', kind: 'circle', label: '黄色圆形 1', lblCol: '#b88600', lblY: 60, home: [210, 735], targets: ['wheelL', 'wheelR'],
-            draw: g => mk('circle', { cx: 0, cy: 0, r: 34, fill: '#ffd60a', stroke: '#2b241d', 'stroke-width': 3.5 }, g),
-          },
-          {
-            id: 'sq', kind: 'square', label: '绿色正方形', lblCol: '#4f772d', lblY: 78, home: [480, 735], targets: [],
-            draw: g => mk('rect', { x: -52, y: -52, width: 104, height: 104, rx: 6, fill: '#8ac926', stroke: '#2b241d', 'stroke-width': 3.5 }, g),
-          },
-          {
-            id: 'cir2', kind: 'circle', label: '黄色圆形 2', lblCol: '#b88600', lblY: 60, home: [745, 735], targets: ['wheelL', 'wheelR'],
-            draw: g => mk('circle', { cx: 0, cy: 0, r: 34, fill: '#ffd60a', stroke: '#2b241d', 'stroke-width': 3.5 }, g),
-          },
+        const itemDefs = [
+          { id: 'toothbrush', label: '牙刷 toothbrush', col: '#0284c7', home: [180, 715], slot: 'left',  correct: true,  hint: '' },
+          { id: 'comb',       label: '梳子 comb',       col: '#b45309', home: [380, 715], slot: null,    correct: false, hint: '梳子是用来梳头发的哦，不能用来刷牙齿！' },
+          { id: 'toothpaste', label: '牙膏 toothpaste', col: '#db2777', home: [580, 715], slot: 'right', correct: true,  hint: '' },
+          { id: 'soap',       label: '香皂 soap',       col: '#0f766e', home: [780, 715], slot: null,    correct: false, hint: '香皂是用来洗手洗澡的，吃进嘴巴会吐泡泡啦！' },
         ];
 
-        let locked = false, placedCount = 0;
+        let locked = false, foundCount = 0;
         const nodes = [];
 
-        const checkDone = () => {
-          progEl.textContent = `已拼好 ${placedCount} / 4 块` + (placedCount < 4 ? ' · 继续加油！' : ' · 小屋子车拼成啦！');
-          if (placedCount === 4) {
-            const smile = G(L, { x: 480, y: 306, o: 0, s: 0.6 });
-            mk('circle', { cx: -32, cy: -10, r: 8, fill: '#2b241d' }, smile);
-            mk('circle', { cx: 32, cy: -10, r: 8, fill: '#2b241d' }, smile);
-            mk('circle', { cx: -29, cy: -13, r: 3, fill: '#ffffff' }, smile);
-            mk('circle', { cx: 35, cy: -13, r: 3, fill: '#ffffff' }, smile);
-            mk('path', { d: 'M-22 14 Q0 34 22 14', fill: 'none', stroke: '#2b241d', 'stroke-width': 5, 'stroke-linecap': 'round' }, smile);
-            fx(smile, { o: 1, s: 1 }, 0.1, 0.35, back);
-            sc_playSfx('applause', 0.55);
-            api.grade(true, '太棒了！紫色三角形做屋顶，橙色长方形做车身，两个黄色圆形做轮子，绿色正方形没有用到！');
-          }
+        const celebrate = () => {
+          progEl.textContent = '已找到 2 / 2 样 · 牙齿刷得白白亮亮！';
+          const fxG = G(L, { x: 480, y: 350, o: 0, s: 0.6 });
+          const bubbles = [[-90, -40, 14], [95, -30, 12], [-70, 45, 10], [80, 48, 13], [0, -85, 11]];
+          bubbles.forEach(([bx, by, br]) => {
+            mk('circle', { cx: bx, cy: by, r: br, fill: '#e0f7ff', stroke: '#38bdf8', 'stroke-width': 2.5 }, fxG);
+            mk('circle', { cx: bx - br * 0.3, cy: by - br * 0.3, r: br * 0.25, fill: '#ffffff' }, fxG);
+          });
+          mk('polygon', { points: '-120,-85 -114,-73 -102,-73 -111,-66 -108,-54 -120,-61 -132,-54 -129,-66 -138,-73 -126,-73', fill: '#ffd60a' }, fxG);
+          mk('polygon', { points: '122,-80 128,-68 140,-68 131,-61 134,-49 122,-56 110,-49 113,-61 104,-68 116,-68', fill: '#ffd60a' }, fxG);
+          fx(fxG, { o: 1, s: 1.05 }, 0.05, 0.4, back);
+          u1_playSfx('splash', 0.55);
+          u1_playSfx('applause', 0.55);
+          if (S.brushDoudou) S.brushDoudou.setExpr('teeth');
+          api.grade(true, '太棒了！刷牙需要牙刷（toothbrush）和牙膏（toothpaste），每天早晚刷牙牙齿才健康！');
         };
 
-        const snapToSlot = (item, slotKey) => {
+        const placeCorrect = item => {
           if (item.placed) return;
-          const slot = SLOTS[slotKey];
-          slot.filled = item;
-          item.placed = slotKey;
-          placedCount++;
-          put(item.lbl, { o: 0 });
-          fx(item.g, { x: slot.x, y: slot.y, s: 1 }, 0, 0.28, back);
-          sc_playSfx('chime', 0.6);
-          checkDone();
+          item.placed = true;
+          const sl = SLOTS[item.slot];
+          sl.filled = true;
+          foundCount++;
+          fx(item.g, { x: sl.x, y: sl.y, s: 1.08 }, 0, 0.3, back);
+          u1_playSfx('chime', 0.6);
+          if (foundCount === 2) celebrate();
+          else progEl.textContent = '已找到 1 / 2 样 · 再找出另一样刷牙工具吧！';
         };
 
         const tryPlace = (item, x, y, tapMode = false) => {
           if (locked || item.placed) return;
-          const inShadowZone = tapMode || (x >= 260 && x <= 700 && y >= 135 && y <= 440);
-          if (!inShadowZone) {
+          const inDropZone = tapMode || (x >= 200 && x <= 760 && y >= 180 && y <= 575);
+          if (!inDropZone) {
             fx(item.g, { x: item.home[0], y: item.home[1] }, 0, 0.25, out);
             return;
           }
-          if (!item.targets.length) {
-            sc_playSfx('boing', 0.55);
+          if (!item.correct) {
+            u1_playSfx('boing', 0.55);
             fx(item.g, { x: item.home[0], y: item.home[1] }, 0, 0.28, out);
             shakeFx(item.g);
-            api.grade(false, '绿色正方形太窄啦，放不进宽宽的车身！试试把橙色长方形拖上去吧。');
+            if (S.brushDoudou) {
+              S.brushDoudou.setExpr('curious');
+              setTimeout(() => S.brushDoudou?.setExpr('teeth'), 1200);
+            }
+            api.grade(false, item.hint);
             return;
           }
-          // 选距离最近且未被占用的目标槽位
-          const openKeys = item.targets.filter(k => !SLOTS[k].filled);
-          if (!openKeys.length) {
-            fx(item.g, { x: item.home[0], y: item.home[1] }, 0, 0.25, out);
-            return;
-          }
-          openKeys.sort((a, b) => Math.hypot(x - SLOTS[a].x, y - SLOTS[a].y) - Math.hypot(x - SLOTS[b].x, y - SLOTS[b].y));
-          snapToSlot(item, openKeys[0]);
+          placeCorrect(item);
         };
 
-        pieceDefs.forEach((def, idx) => {
+        itemDefs.forEach(def => {
           const g = G(L, { x: def.home[0], y: def.home[1] });
           g.classList.add('sc-drag');
           g.setAttribute('tabindex', '0');
           g.setAttribute('role', 'button');
           g.setAttribute('aria-label', def.label);
-          def.draw(g);
-          const lbl = T(g, def.label, { x: 0, y: def.lblY, size: 22, fill: def.lblCol, weight: 700, anchor: 'middle' });
-          const item = { ...def, g, lbl, placed: null };
+          mk('rect', { x: -78, y: -56, width: 156, height: 120, rx: 22, fill: '#ffffff', stroke: def.col, 'stroke-width': 3 }, g);
+          u1_drawBrushItem(g, def.id);
+          T(g, def.label, { x: 0, y: 84, size: 20, fill: def.col, weight: 700, anchor: 'middle' });
+          const item = { ...def, g, placed: false };
           nodes.push(item);
 
           let drag = null;
@@ -757,7 +465,7 @@ const BEATS = [
             e.preventDefault();
             const p0 = pt(e);
             drag = { dx: p0[0] - st(g).x, dy: p0[1] - st(g).y, sx: p0[0], sy: p0[1], moved: false };
-            L.append(g); // 先提升层级再捕获指针
+            L.append(g);
             g.setPointerCapture(e.pointerId);
           });
           g.addEventListener('pointermove', e => {
@@ -768,10 +476,9 @@ const BEATS = [
           });
           const endDrag = () => {
             if (!drag) return;
-            const wasMoved = drag.moved;
+            const moved = drag.moved;
             drag = null;
-            if (wasMoved) tryPlace(item, st(g).x, st(g).y, false);
-            else tryPlace(item, st(g).x, st(g).y, true);
+            tryPlace(item, st(g).x, st(g).y, !moved);
           };
           g.addEventListener('pointerup', endDrag);
           g.addEventListener('lostpointercapture', endDrag);
@@ -779,15 +486,10 @@ const BEATS = [
         });
 
         return {
-          hint: [kbd('1–5'), ' 放置积木 · 或直接拖进黑影'],
+          hint: [kbd('1–4'), ' 选择物品 · 或直接拖到豆豆嘴边'],
           reveal() {
-            nodes.forEach(item => {
-              if (!item.placed && item.targets.length) {
-                const openKey = item.targets.find(k => !SLOTS[k].filled);
-                if (openKey) snapToSlot(item, openKey);
-              }
-            });
-            return '紫色三角形 + 橙色长方形 + 两个黄色圆形组成小屋子车！';
+            nodes.filter(n => n.correct && !n.placed).forEach(placeCorrect);
+            return '刷牙会用到牙刷（toothbrush）和牙膏（toothpaste）！';
           },
           lock() { locked = true; nodes.forEach(n => { n.g.style.cursor = 'default'; }); },
           key(e) {
@@ -801,48 +503,409 @@ const BEATS = [
           },
         };
       },
-    }], done, 'HOTS 影子拼图'),
+    }], done, '刷牙小卫士'),
   }],
 
-  /* 9. 通关庆祝结尾 */
-  ['outro', '通关成功！', (m, D) => {
+  /* 5. 神奇的眼睛 My eyes（瞳色变化 + 颜色/大小/形状观察） */
+  ['u1_eyes', '神奇的眼睛 My eyes', (m, D) => {
     const p = panel(0);
-    sc_bg(p, 'bg_playroom.jpg', 0.2);
-    sfx('outro', 0.15, 'applause', 0.45);
-    sfx('outro', 0.2, 'chime', 0.5);
+    u1_bg(p, 'bg_u1_park.jpg', 0.22);
+    u1_badge(p, '我的眼睛 My eyes', 84, 60, '#2d7dd2', 0.1);
 
-    sc_badge(p, '通关成功 · 小科学家真棒！', 84, 64, '#2bb673', 0.1);
-    const exp = sc_explorer(p, 330, 515, { s: 1.45 });
+    // 上半区：不同人的眼睛颜色
+    const topCard = u1_card(p, 90, 114, 1420, 326, { fill: 'rgba(255,253,247,0.93)', stroke: '#90cdf4', sw: 4 });
+    T(topCard, '我有两只眼睛，人的眼睛有不同的颜色 · Different eye colours', { x: 710, y: 46, size: 28, fill: '#1b5fa8', weight: 700, anchor: 'middle' });
+
+    const eyeAvatars = [
+      ['e_brown', 'brown', '棕色 Brown', '#7c4828', 290],
+      ['e_blue',  'blue',  '蓝色 Blue',  '#2d7dd2', 710],
+      ['e_green', 'green', '绿色 Green', '#2bb673', 1130],
+    ];
+    const portraits = [];
+    eyeAvatars.forEach(([mkName, preset, label, col, ax], idx) => {
+      const wrap = G(topCard, { x: ax, y: 175, o: 0, s: 0.78 });
+      const { inst } = Doudou.createFacePortrait(wrap, {
+        x: 0, y: 0, r: 88, bg: '#fff5e4', frameColor: '#f2cf8d', showFrame: true,
+        hat: false, scarf: true, eyeColor: preset, expr: 'happy',
+      });
+      T(wrap, label, { x: 0, y: 124, size: 25, fill: col, weight: 700, anchor: 'middle' });
+      const tAt = m(mkName);
+      tw(wrap, { o: 1, s: 1 }, tAt, 0.4, back);
+      sfx('u1_eyes', tAt, 'pop', 0.45);
+      portraits.push({ inst, ph: idx * 0.9 });
+    });
+
+    // 下半区：我能够看到……
+    const botCard = u1_card(p, 90, 466, 1420, 368, { fill: 'rgba(255,253,247,0.93)', stroke: '#ffd166', sw: 4 });
+    T(botCard, '我能够看到…… I can see...', { x: 710, y: 46, size: 28, fill: '#b87400', weight: 700, anchor: 'middle' });
+
+    const seeCards = [
+      ['e_col',   'colours', '不同的颜色', 'different colours', '#ff5a5f', 250],
+      ['e_size',  'sizes',   '不同的大小', 'different sizes',   '#f77f00', 710],
+      ['e_shape', 'shapes',  '不同的形状', 'different shapes',  '#2bb673', 1170],
+    ];
+    seeCards.forEach(([mkName, kind, zh, en, col, cx]) => {
+      const cg = G(botCard, { x: cx, y: 205, o: 0, s: 0.8 });
+      mk('rect', { x: -200, y: -128, width: 400, height: 262, rx: 24, fill: '#ffffff', stroke: col, 'stroke-width': 3.5 }, cg);
+      const art = G(cg, { x: 0, y: -38 });
+      u1_drawEyeConcept(art, kind);
+      T(cg, zh, { x: 0, y: 74, size: 29, fill: '#2b241d', weight: 700, anchor: 'middle' });
+      T(cg, en, { x: 0, y: 108, size: 22, fill: '#665c50', weight: 600, anchor: 'middle' });
+      const tAt = m(mkName);
+      tw(cg, { o: 1, s: 1 }, tAt, 0.42, back);
+      sfx('u1_eyes', tAt, 'chime', 0.45);
+    });
+
+    clockRun(t => {
+      portraits.forEach(({ inst, ph }) => Doudou.animateIdle(inst, t + ph, { armL: 6, armR: -6 }));
+    }, D, { tail: true });
+  }, { lead: false }],
+
+  /* 6. 红绿灯大挑战（拖拉/轻点安装红、黄、绿灯泡，绿灯小车出发！） */
+  ['u1_traffic', '红绿灯大挑战 Traffic Light', (m, D) => {
+    const p = panel(0);
+    u1_bg(p, 'bg_u1_park.jpg', 0.14);
+    u1_badge(p, '观察挑战 · 红绿灯三种颜色', 84, 60, '#2bb673', 0.1);
+
+    const board = u1_card(p, 80, 115, 800, 720, { fill: 'rgba(255,253,247,0.95)', stroke: '#a8e6cf', sw: 5, rx: 32 });
+    T(board, '把正确的红、黄、绿灯泡拖进红绿灯！', { x: 400, y: 46, size: 27, fill: '#2b241d', weight: 700, anchor: 'middle' });
+    mk('path', { d: 'M36 530 H764', stroke: '#dfeadc', 'stroke-width': 3, 'stroke-dasharray': '10 8' }, board);
+
+    // 路边小汽车与斑马线
+    mk('rect', { x: 36, y: 448, width: 728, height: 64, rx: 14, fill: '#64748b' }, board);
+    for (let sx = 70; sx < 700; sx += 95) {
+      mk('rect', { x: sx, y: 475, width: 48, height: 10, rx: 4, fill: '#f8fafc' }, board);
+    }
+
+    // 豆豆拿放大镜站在左边
+    const expWrap = G(p, { x: 205, y: 395 });
+    const exp = Doudou.create(expWrap, { x: 0, y: 0, s: 1.04, hat: true, scarf: true, prop: 'magnifier', propSide: 'L', eyeColor: 'brown', expr: 'happy', armL: 24, armR: -14 });
+    S.trafficDoudou = exp;
+
+    // 卡通红绿灯柱（舞台坐标：灯壳 x=400, y=180..495）
+    mk('rect', { x: 386, y: 470, width: 28, height: 105, rx: 8, fill: '#475569', stroke: '#2b241d', 'stroke-width': 3 }, p);
+    mk('rect', { x: 344, y: 185, width: 112, height: 295, rx: 32, fill: '#334155', stroke: '#2b241d', 'stroke-width': 4 }, p);
+    // 三个虚线空灯座
+    mk('circle', { cx: 400, cy: 245, r: 34, fill: '#1e293b', stroke: '#ff5a5f', 'stroke-width': 3.5, 'stroke-dasharray': '8 6' }, p);
+    mk('circle', { cx: 400, cy: 332, r: 34, fill: '#1e293b', stroke: '#ffd60a', 'stroke-width': 3.5, 'stroke-dasharray': '8 6' }, p);
+    mk('circle', { cx: 400, cy: 419, r: 34, fill: '#1e293b', stroke: '#2bb673', 'stroke-width': 3.5, 'stroke-dasharray': '8 6' }, p);
+
+    // 可爱卡通小汽车（等待绿灯亮起驶过）
+    const car = G(p, { x: 650, y: 540 });
+    mk('path', { d: 'M-82,12 C-82,-12 -64,-18 -46,-18 L-28,-46 C-22,-54 22,-54 28,-46 L46,-18 C66,-18 82,-10 82,12 L82,26 C82,34 74,36 66,36 L-66,36 C-74,36 -82,34 -82,26 Z', fill: '#38bdf8', stroke: '#2b241d', 'stroke-width': 3.5, 'stroke-linejoin': 'round' }, car);
+    mk('path', { d: 'M-22,-40 L22,-40 L34,-18 L-34,-18 Z', fill: '#e0f7ff', stroke: '#2b241d', 'stroke-width': 2.6, 'stroke-linejoin': 'round' }, car);
+    mk('circle', { cx: -46, cy: 36, r: 17, fill: '#334155', stroke: '#2b241d', 'stroke-width': 3 }, car);
+    mk('circle', { cx: -46, cy: 36, r: 7, fill: '#e2e8f0' }, car);
+    mk('circle', { cx: 46, cy: 36, r: 17, fill: '#334155', stroke: '#2b241d', 'stroke-width': 3 }, car);
+    mk('circle', { cx: 46, cy: 36, r: 7, fill: '#e2e8f0' }, car);
+    S.trafficCar = car;
+
+    const tray = G(p, { x: 0, y: 0, o: 0 });
+    S.trafficTray = tray;
+    const bulbPreview = [
+      ['红色红灯', '#ff5a5f', 190, 725],
+      ['紫色干扰', '#9d4edd', 390, 725],
+      ['黄色黄灯', '#ffd60a', 580, 725],
+      ['绿色绿灯', '#2bb673', 770, 725],
+    ];
+    bulbPreview.forEach(([lbl, hex, bx, by]) => {
+      const g = G(tray, { x: bx, y: by });
+      mk('circle', { cx: 0, cy: 0, r: 34, fill: hex, stroke: '#2b241d', 'stroke-width': 3.5 }, g);
+      mk('ellipse', { cx: -10, cy: -12, rx: 10, ry: 5, transform: 'rotate(-28 -10 -12)', fill: '#ffffff', opacity: 0.6 }, g);
+      T(g, lbl, { x: 0, y: 62, size: 20, fill: '#2b241d', weight: 700, anchor: 'middle' });
+    });
+    show(tray, m('tr_go', 0), 0.35);
+
+    clockRun(t => {
+      Doudou.animateIdle(exp, t, { armL: 24, armR: -14 });
+    }, D, { tail: true });
+  }, {
+    lead: false,
+    hold: 1.6,
+    ask: done => quiz({ x: 915, y: 175, w: 605, cls: 'side' }, [{
+      id: 'u1-q-traffic',
+      prompt: ['把红、黄、绿三种颜色的灯泡装进红绿灯吧！'],
+      build: (body, api) => {
+        if (S.trafficTray) S.trafficTray.style.display = 'none';
+        const L = qlayer();
+        const progEl = h('div', 'sc-progress', '已点亮 0 / 3 盏灯 · 拖进红绿灯或轻点灯泡');
+        body.append(progEl);
+
+        const stage = $('stage');
+        const pt = e => {
+          const r = stage.getBoundingClientRect();
+          return [(e.clientX - r.left) * SW / r.width, (e.clientY - r.top) * SH / r.height];
+        };
+
+        const SLOTS = {
+          red:    { x: 400, y: 245, filled: false },
+          yellow: { x: 400, y: 332, filled: false },
+          green:  { x: 400, y: 419, filled: false },
+        };
+
+        const bulbs = [
+          { id: 'red',    label: '红灯 red',    hex: '#ff5a5f', home: [190, 725], slot: 'red',    hint: '' },
+          { id: 'purple', label: '紫灯 purple', hex: '#9d4edd', home: [390, 725], slot: null,     hint: '红绿灯里没有紫色哦！找找红、黄、绿三种颜色吧。' },
+          { id: 'yellow', label: '黄灯 yellow', hex: '#ffd60a', home: [580, 725], slot: 'yellow', hint: '' },
+          { id: 'green',  label: '绿灯 green',  hex: '#2bb673', home: [770, 725], slot: 'green',  hint: '' },
+        ];
+
+        let locked = false, count = 0;
+        const nodes = [];
+
+        const finishLights = () => {
+          progEl.textContent = '红灯停、黄灯等、绿灯亮啦 · 小汽车安全出发！';
+          u1_playSfx('bell', 0.55);
+          u1_playSfx('applause', 0.5);
+          if (S.trafficDoudou) S.trafficDoudou.setExpr('amazed');
+          if (S.trafficCar) fx(S.trafficCar, { x: 760 }, 0.15, 0.9, out);
+          api.grade(true, '答对了！红绿灯有红色（red）、黄色（yellow）和绿色（green）三种颜色，绿灯亮起可以安全走啦！');
+        };
+
+        const snapBulb = item => {
+          if (item.placed) return;
+          item.placed = true;
+          const sl = SLOTS[item.slot];
+          sl.filled = true;
+          count++;
+          put(item.lbl, { o: 0 });
+          fx(item.g, { x: sl.x, y: sl.y, s: 1 }, 0, 0.28, back);
+          u1_playSfx('chime', 0.6);
+          if (count === 3) finishLights();
+          else progEl.textContent = `已点亮 ${count} / 3 盏灯 · 继续安装下一盏！`;
+        };
+
+        const tryPlace = (item, x, y, tapMode = false) => {
+          if (locked || item.placed) return;
+          const inBox = tapMode || (x >= 280 && x <= 560 && y >= 150 && y <= 520);
+          if (!inBox) {
+            fx(item.g, { x: item.home[0], y: item.home[1] }, 0, 0.25, out);
+            return;
+          }
+          if (!item.slot) {
+            u1_playSfx('boing', 0.55);
+            fx(item.g, { x: item.home[0], y: item.home[1] }, 0, 0.28, out);
+            shakeFx(item.g);
+            api.grade(false, item.hint);
+            return;
+          }
+          snapBulb(item);
+        };
+
+        bulbs.forEach(def => {
+          const g = G(L, { x: def.home[0], y: def.home[1] });
+          g.classList.add('sc-drag');
+          g.setAttribute('tabindex', '0');
+          g.setAttribute('role', 'button');
+          g.setAttribute('aria-label', def.label);
+          mk('circle', { cx: 0, cy: 0, r: 34, fill: def.hex, stroke: '#2b241d', 'stroke-width': 3.5 }, g);
+          mk('ellipse', { cx: -10, cy: -12, rx: 10, ry: 5, transform: 'rotate(-28 -10 -12)', fill: '#ffffff', opacity: 0.65 }, g);
+          const lbl = T(g, def.label, { x: 0, y: 62, size: 20, fill: '#2b241d', weight: 700, anchor: 'middle' });
+          const item = { ...def, g, lbl, placed: false };
+          nodes.push(item);
+
+          let drag = null;
+          g.addEventListener('pointerdown', e => {
+            if (locked || item.placed) return;
+            e.preventDefault();
+            const p0 = pt(e);
+            drag = { dx: p0[0] - st(g).x, dy: p0[1] - st(g).y, sx: p0[0], sy: p0[1], moved: false };
+            L.append(g);
+            g.setPointerCapture(e.pointerId);
+          });
+          g.addEventListener('pointermove', e => {
+            if (!drag) return;
+            const p0 = pt(e);
+            if (Math.hypot(p0[0] - drag.sx, p0[1] - drag.sy) > 8) drag.moved = true;
+            if (drag.moved) put(g, { x: p0[0] - drag.dx, y: p0[1] - drag.dy });
+          });
+          const endDrag = () => {
+            if (!drag) return;
+            const moved = drag.moved;
+            drag = null;
+            tryPlace(item, st(g).x, st(g).y, !moved);
+          };
+          g.addEventListener('pointerup', endDrag);
+          g.addEventListener('lostpointercapture', endDrag);
+          keyAct(g, () => tryPlace(item, def.home[0], def.home[1], true));
+        });
+
+        return {
+          hint: [kbd('1–4'), ' 放置灯泡 · 或拖进红绿灯'],
+          reveal() {
+            nodes.filter(n => n.slot && !n.placed).forEach(snapBulb);
+            return '红绿灯的三种颜色是红色、黄色和绿色！';
+          },
+          lock() { locked = true; nodes.forEach(n => { n.g.style.cursor = 'default'; }); },
+          key(e) {
+            const idx = +e.key - 1;
+            if (idx >= 0 && idx < nodes.length) {
+              const it = nodes[idx];
+              tryPlace(it, it.home[0], it.home[1], true);
+              return true;
+            }
+            return false;
+          },
+        };
+      },
+    }], done, '红绿灯挑战'),
+  }],
+
+  /* 7. 复习挑战：数一数我的身体（触摸选择数字星星填入卡片） */
+  ['u1_count', '复习！数一数身体部位', (m, D) => {
+    const p = panel(0);
+    u1_bg(p, 'bg_u1_bedroom.jpg', 0.2);
+    u1_badge(p, '复习挑战 · 数一数我的身体', 84, 60, '#9d4edd', 0.1);
+
+    const expWrap = G(p, { x: 250, y: 525 });
+    const exp = Doudou.create(expWrap, { x: 0, y: 0, s: 1.5, hat: false, scarf: false, barefoot: true, eyeColor: 'brown', expr: 'happy', armL: 28, armR: -28 });
+    S.countDoudou = exp;
+
+    const specs = [
+      ['我有', '只手 · hands',    '2', '#ff5a5f', 'hand'],
+      ['我有', '条腿 · legs',     '2', '#2d7dd2', 'leg'],
+      ['我有', '张嘴 · mouth',    '1', '#f77f00', 'mouth'],
+      ['我有', '只眼睛 · eyes',   '2', '#2bb673', 'eye'],
+    ];
+
+    S.countRows = [];
+    specs.forEach(([preTxt, postTxt, ans, col], i) => {
+      const cy = 155 + i * 168;
+      const card = u1_card(p, 445, cy, 430, 140, { fill: 'rgba(255,253,247,0.95)', stroke: '#e8d8bd', sw: 3.5, rx: 24 });
+      T(card, preTxt, { x: 36, y: 82, size: 34, fill: '#2b241d', weight: 700 });
+      const box = mk('rect', { x: 118, y: 34, width: 72, height: 72, rx: 18, fill: '#f4f7fb', stroke: col, 'stroke-width': 3.5, 'stroke-dasharray': '7 5' }, card);
+      const qMark = T(card, '?', { x: 154, y: 84, size: 38, fill: col, weight: 800, anchor: 'middle' });
+      const ansText = T(card, ans, { x: 154, y: 86, size: 44, fill: '#ffffff', weight: 800, anchor: 'middle', o: 0 });
+      T(card, postTxt, { x: 208, y: 82, size: 28, fill: '#2b241d', weight: 700 });
+      S.countRows.push({ box, qMark, ansText, col });
+      put(card, { o: 0, y: cy + 20 });
+      tw(card, { o: 1, y: cy }, m('cnt_go', i * 0.3), 0.35, out);
+    });
+
+    clockRun(t => {
+      Doudou.animateIdle(exp, t, { armL: 28, armR: -28 });
+    }, D, { tail: true });
+  }, {
+    lead: false,
+    hold: 1.5,
+    ask: done => {
+      const fillCount = (idx, partName) => {
+        const r = S.countRows?.[idx];
+        if (r) {
+          r.box.setAttribute('fill', r.col);
+          r.box.removeAttribute('stroke-dasharray');
+          fx(r.qMark, { o: 0 }, 0, 0.18);
+          fx(r.ansText, { o: 1 }, 0.05, 0.25, back);
+          u1_playSfx('chime', 0.6);
+        }
+        if (S.countDoudou) {
+          S.countDoudou.highlightPart(partName, true);
+          setTimeout(() => S.countDoudou?.highlightPart(partName, false), 1100);
+        }
+      };
+      return quiz({ x: 915, y: 175, w: 605, cls: 'side' }, [
+        {
+          id: 'u1-cnt-hand',
+          prompt: ['数一数豆豆有几只手（hands）？'],
+          build: choice(
+            [
+              [u1_numBadge('1', '#ff9f1c'), '1 只手'],
+              [u1_numBadge('2', '#ff5a5f'), '2 只手'],
+              [u1_numBadge('3', '#2d7dd2'), '3 只手'],
+            ],
+            1,
+            '答对了！左手和右手加起来，一共有 2 只手！',
+            ['再数一数左边和右边，两只手都能拿东西哦！', null, '只有左手和右手，没有 3 只手哦。'],
+            () => fillCount(0, 'hand')
+          ),
+        },
+        {
+          id: 'u1-cnt-leg',
+          prompt: ['数一数豆豆有几条腿（legs）？'],
+          build: choice(
+            [
+              [u1_numBadge('2', '#2d7dd2'), '2 条腿'],
+              [u1_numBadge('1', '#ff9f1c'), '1 条腿'],
+              [u1_numBadge('3', '#9d4edd'), '3 条腿'],
+            ],
+            0,
+            '真棒！我们有 2 条腿，可以走路和蹦蹦跳！',
+            [null, '一条腿站着会摔倒哦，数数左右两条腿！', '小探险家有 2 条腿，不是 3 条哦。'],
+            () => fillCount(1, 'leg')
+          ),
+        },
+        {
+          id: 'u1-cnt-mouth',
+          prompt: ['数一数豆豆有几张嘴（mouth）？'],
+          build: choice(
+            [
+              [u1_numBadge('2', '#2d7dd2'), '2 张嘴'],
+              [u1_numBadge('1', '#f77f00'), '1 张嘴'],
+              [u1_numBadge('3', '#ff5a5f'), '3 张嘴'],
+            ],
+            1,
+            '太聪明了！我们只有 1 张嘴，用来说话、唱歌和吃东西！',
+            ['再照照镜子看一看，脸上只有 1 张嘴巴哦！', null, '只有 1 张嘴巴哦！'],
+            () => fillCount(2, 'mouth')
+          ),
+        },
+        {
+          id: 'u1-cnt-eye',
+          prompt: ['数一数豆豆有几只眼睛（eyes）？'],
+          build: choice(
+            [
+              [u1_numBadge('1', '#f77f00'), '1 只眼睛'],
+              [u1_numBadge('3', '#9d4edd'), '3 只眼睛'],
+              [u1_numBadge('2', '#2bb673'), '2 只眼睛'],
+            ],
+            2,
+            '全对啦！我有 2 只亮晶晶的眼睛，用来看五彩缤纷的世界！',
+            ['左边一只、右边一只，加起来是 2 只眼睛哦！', '没有 3 只眼睛，是左眼和右眼一共 2 只！', null],
+            () => fillCount(3, 'eye')
+          ),
+        },
+      ], done, '数数身体部位');
+    },
+  }],
+
+  /* 8. 身体小侦探通关总结 */
+  ['u1_outro', '通关成功 · 身体小侦探！', (m, D) => {
+    const p = panel(0);
+    u1_bg(p, 'bg_u1_park.jpg', 0.18);
+    sfx('u1_outro', 0.15, 'applause', 0.45);
+    sfx('u1_outro', 0.25, 'chime', 0.5);
+
+    u1_badge(p, '单元 1 通关 · 身体小侦探！', 84, 62, '#2bb673', 0.1);
+    const expWrap = G(p, { x: 330, y: 515 });
+    const exp = Doudou.create(expWrap, { x: 0, y: 0, s: 1.54, hat: true, scarf: true, prop: 'badge', propSide: 'R', eyeColor: 'brown', expr: 'happy', armL: 24, armR: -78 });
 
     const wins = [
-      ['o1', '认识九种颜色（中英双语）', '#ff5a5f', 0, 'dot'],
-      ['o2', '蓝+红=紫 · 黄+蓝=绿', '#9d4edd', 1, 'star'],
-      ['o3', '分辨 3D 立体与 2D 平面形状', '#19a7e0', 2, 'tri'],
-      ['o4', '按颜色与形状分类 · 影子拼图', '#2bb673', 3, 'sq'],
+      ['o1', '认识身体 10 部位 & 脸部 9 五官', '#ff5a5f', 0, 'dot'],
+      ['o2', '早晚用牙刷和牙膏保护牙齿', '#00a8e8', 1, 'star'],
+      ['o3', '用眼睛看颜色、大小、形状和红绿灯', '#2d7dd2', 2, 'tri'],
+      ['o4', '数一数：2 只手 · 2 条腿 · 1 张嘴 · 2 只眼', '#2bb673', 3, 'sq'],
     ];
     wins.forEach(([mkName, txt, col, idx, icon]) => {
       const card = G(p, { x: 640, y: 205 + idx * 145, o: 0, s: 0.88 });
-      mk('rect', { x: 0, y: -48, width: 780, height: 108, rx: 28, fill: 'rgba(255,255,255,0.95)', stroke: col, 'stroke-width': 4 }, card);
+      mk('rect', { x: 0, y: -48, width: 820, height: 108, rx: 28, fill: 'rgba(255,255,255,0.95)', stroke: col, 'stroke-width': 4 }, card);
       if (icon === 'dot') mk('circle', { cx: 48, cy: 6, r: 16, fill: col }, card);
       else if (icon === 'star') mk('polygon', { points: '48,-12 54,0 66,0 56,8 60,20 48,13 36,20 40,8 30,0 42,0', fill: col }, card);
       else if (icon === 'tri') mk('polygon', { points: '48,-12 32,18 64,18', fill: col }, card);
       else mk('rect', { x: 34, y: -8, width: 28, height: 28, rx: 5, fill: col }, card);
-      T(card, txt, { x: 86, y: 16, size: 34, fill: '#2b241d', weight: 700 });
+      T(card, txt, { x: 86, y: 16, size: 32, fill: '#2b241d', weight: 700 });
       tw(card, { o: 1, s: 1 }, m(mkName), 0.35, back);
     });
 
     clockRun(t => {
-      put(exp.armR, { r: -120 + 20 * Math.sin(t * 8) });
-      put(exp.root, { y: 515 - Math.abs(12 * Math.sin(t * 4)) });
-      put(exp.eyeL, { s: (t % 3.0 > 2.85) ? 0.15 : 1 });
-      put(exp.eyeR, { s: (t % 3.0 > 2.85) ? 0.15 : 1 });
+      put(expWrap, { y: 515 - Math.abs(12 * Math.sin(t * 4)) });
+      Doudou.animateIdle(exp, t, { armL: 24, armR: -78 + 14 * Math.sin(t * 6.5) });
     }, D, { tail: true });
   }, { lead: false }],
 ].map(([id, title, run, extra]) => ({ id, title, run, ...extra }));
 
 /* ---------- 欢快儿童背景配乐（人声下自动压低 -16 dB） ---------- */
 window.MUSIC_LEVELS = { under: -16, open: -8 };
-music('audio/bgm/playtime.mp3', ['intro', 'colours', 'mixing_demo', 'mixing_quiz', 'shapes', 'shape_find', 'grouping', 'hots_shadow', 'outro'], 0.34);
+music('audio/bgm/about_me.mp3', ['u1_intro', 'u1_body', 'u1_face', 'u1_brush', 'u1_eyes', 'u1_traffic', 'u1_count', 'u1_outro'], 0.34);
 
 boot();
 </script>
