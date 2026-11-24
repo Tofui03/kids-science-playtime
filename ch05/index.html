@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>去学校吧！Let's Go to School! · 趣味科学小课堂</title>
+<link rel="stylesheet" href="../lib/engine.css">
+<link rel="expect" href="#bar" blocking="render">
+</head>
+<body>
+<script src="../lib/engine.js"></script>
+<script src="../lib/doudou.js"></script>
+<script src="audio/zh/timings.js"></script>
+<script>
+'use strict';
+const CHAPTER = { number: 5, title: '去学校吧！Let\'s Go to School!', minutes: 5, language: 'zh', film: true, questionKeys: false };
+try { if (localStorage.getItem('captions') === null) setCaptions(true, false); } catch {}
+
+/* ---------- Unit 5 绘本舞台助手（u5_ 前缀） ---------- */
+function u5_bg(p, imgName, veil = 0.2) {
+  mk('image', { href: `../img/${imgName}`, x: 0, y: 0, width: 1600, height: 900, preserveAspectRatio: 'xMidYMid slice' }, p);
+  if (veil > 0) mk('rect', { x: 0, y: 0, width: 1600, height: 900, fill: `rgba(255,253,247,${veil})` }, p);
+}
+
+function u5_badge(p, label, x = 80, y = 60, fill = '#2d7dd2', t0 = 0.1) {
+  const g = G(p, { x, y, o: 0 });
+  const w = Math.max(160, label.length * 25 + 54);
+  mk('rect', { x: 4, y: -24, width: w, height: 52, rx: 26, fill: 'rgba(60,40,10,0.14)' }, g);
+  mk('rect', { x: 0, y: -28, width: w, height: 52, rx: 26, fill }, g);
+  T(g, label, { x: w / 2, y: 7, size: 24, fill: '#ffffff', weight: 700, anchor: 'middle' });
+  tw(g, { o: 1 }, t0, 0.3);
+  return g;
+}
+
+function u5_card(p, x, y, w, h, { fill = 'rgba(255,253,247,0.93)', stroke = '#f0dec0', sw = 4, rx = 28 } = {}) {
+  const g = G(p, { x, y });
+  mk('rect', { x: 6, y: 10, width: w, height: h, rx, fill: 'rgba(80,50,20,0.1)' }, g);
+  mk('rect', { x: 0, y: 0, width: w, height: h, rx, fill, stroke, 'stroke-width': sw }, g);
+  return g;
+}
+
+const U5_SFX_CACHE = {};
+function u5_playSfx(name, vol = 0.6) {
+  try {
+    const a = U5_SFX_CACHE[name] || (U5_SFX_CACHE[name] = new Audio(`audio/sfx/${name}.mp3`));
+    a.currentTime = 0;
+    a.volume = vol * +($('volume')?.value ?? 1);
+    a.play().catch(() => {});
+  } catch {}
+}
+
+function u5_swatch(hex) {
+  const sp = h('span', 'sc-swatch');
+  sp.style.background = hex;
+  return sp;
+}
+
+/* 物品纯 SVG 绘制 */
+function u5_drawItem(par, kind) {
+  if (kind === 'thick_book') {
+    mk('rect', { x: -34, y: -38, width: 68, height: 74, rx: 8, fill: '#2bb673', stroke: '#2b241d', 'stroke-width': 3 }, par);
+    mk('rect', { x: -26, y: -24, width: 52, height: 22, rx: 4, fill: '#ffffff', stroke: '#2b241d', 'stroke-width': 2 }, par);
+    mk('path', { d: 'M-26,36 H34 L34,46 H-26 C-34,46 -34,36 -26,36 Z', fill: '#fff8ec', stroke: '#2b241d', 'stroke-width': 2.6 }, par);
+    mk('path', { d: 'M-24,41 H30', stroke: '#94a3b8', 'stroke-width': 1.8 }, par);
+  } else if (kind === 'thin_paper') {
+    mk('path', { d: 'M-26,-34 H16 L28,-22 V36 H-26 Z', fill: '#ffffff', stroke: '#2b241d', 'stroke-width': 2.8, 'stroke-linejoin': 'round' }, par);
+    mk('path', { d: 'M16,-34 V-22 H28', fill: '#e2e8f0', stroke: '#2b241d', 'stroke-width': 2.4, 'stroke-linejoin': 'round' }, par);
+    mk('path', { d: 'M-16,-10 H16 M-16,4 H16 M-16,18 H8', stroke: '#94a3b8', 'stroke-width': 2.6, 'stroke-linecap': 'round' }, par);
+  } else if (kind === 'thick_sandwich') {
+    mk('path', { d: 'M-40,-18 Q0,-34 40,-18 L40,-4 H-40 Z', fill: '#f4a261', stroke: '#2b241d', 'stroke-width': 2.8 }, par);
+    mk('rect', { x: -42, y: -4, width: 84, height: 10, rx: 4, fill: '#52b788', stroke: '#2b241d', 'stroke-width': 2 }, par);
+    mk('rect', { x: -40, y: 6, width: 80, height: 10, rx: 4, fill: '#ff5a5f', stroke: '#2b241d', 'stroke-width': 2 }, par);
+    mk('rect', { x: -40, y: 16, width: 80, height: 16, rx: 6, fill: '#f4a261', stroke: '#2b241d', 'stroke-width': 2.8 }, par);
+  } else if (kind === 'thin_cracker') {
+    mk('rect', { x: -34, y: 4, width: 68, height: 12, rx: 5, fill: '#ffd166', stroke: '#2b241d', 'stroke-width': 2.8 }, par);
+    mk('circle', { cx: -16, cy: 10, r: 2, fill: '#b45309' }, par);
+    mk('circle', { cx: 0, cy: 10, r: 2, fill: '#b45309' }, par);
+    mk('circle', { cx: 16, cy: 10, r: 2, fill: '#b45309' }, par);
+  } else if (kind === 'wet_umbrella') {
+    mk('path', { d: 'M-38,2 C-38,-28 38,-28 38,2 Z', fill: '#38bdf8', stroke: '#2b241d', 'stroke-width': 3, 'stroke-linejoin': 'round' }, par);
+    mk('path', { d: 'M0,2 V32 C0,40 -12,40 -12,32', fill: 'none', stroke: '#5a3b2c', 'stroke-width': 4, 'stroke-linecap': 'round' }, par);
+    // 滴水珠
+    mk('path', { d: 'M-26,14 C-30,22 -22,26 -22,19 Z M24,12 C20,20 28,24 28,17 Z M-2,-34 C-6,-26 2,-22 2,-29 Z', fill: '#0284c7' }, par);
+  } else if (kind === 'wet_boots') {
+    mk('path', { d: 'M-24,-28 H6 V14 H28 C34,14 34,30 28,30 H-24 Z', fill: '#ffd166', stroke: '#2b241d', 'stroke-width': 3, 'stroke-linejoin': 'round' }, par);
+    mk('ellipse', { cx: 2, cy: 36, rx: 38, ry: 8, fill: '#7dd3fc', opacity: 0.8 }, par);
+    mk('path', { d: 'M-14,-38 C-18,-30 -10,-26 -10,-33 Z M20,-16 C16,-8 24,-4 24,-11 Z', fill: '#0284c7' }, par);
+  } else if (kind === 'dry_towel') {
+    mk('rect', { x: -30, y: -26, width: 60, height: 54, rx: 10, fill: '#ffcad4', stroke: '#2b241d', 'stroke-width': 3 }, par);
+    mk('path', { d: 'M-30,-4 H30 M-30,10 H30', stroke: '#ff7aa2', 'stroke-width': 5 }, par);
+    mk('circle', { cx: 32, cy: -28, r: 8, fill: '#ffd60a', stroke: '#f59e0b', 'stroke-width': 2 }, par);
+  } else if (kind === 'dry_book') {
+    mk('rect', { x: -28, y: -30, width: 56, height: 60, rx: 8, fill: '#a78bfa', stroke: '#2b241d', 'stroke-width': 3 }, par);
+    mk('rect', { x: -16, y: -14, width: 32, height: 14, rx: 4, fill: '#ffffff' }, par);
+  } else if (kind === 'hot_soup') {
+    mk('path', { d: 'M-44,0 H44 C40,30 -40,30 -44,0 Z', fill: '#ff5a5f', stroke: '#2b241d', 'stroke-width': 3, 'stroke-linejoin': 'round' }, par);
+    mk('rect', { x: -20, y: 24, width: 40, height: 8, rx: 4, fill: '#b91c1c', stroke: '#2b241d', 'stroke-width': 2.2 }, par);
+    mk('path', { d: 'M-22,-12 Q-30,-28 -18,-42 M0,-14 Q-8,-32 4,-46 M22,-12 Q14,-28 26,-42', fill: 'none', stroke: '#94a3b8', 'stroke-width': 4, 'stroke-linecap': 'round' }, par);
+  } else if (kind === 'cold_ice') {
+    mk('rect', { x: -22, y: -42, width: 44, height: 58, rx: 18, fill: '#38bdf8', stroke: '#2b241d', 'stroke-width': 3 }, par);
+    mk('rect', { x: -5, y: 16, width: 10, height: 28, rx: 5, fill: '#f4a261', stroke: '#2b241d', 'stroke-width': 2.4 }, par);
+    mk('path', { d: 'M-34,-26 L-24,-18 M34,-26 L24,-18 M-36,4 L-26,4 M36,4 L26,4', stroke: '#0284c7', 'stroke-width': 3, 'stroke-linecap': 'round' }, par);
+  }
+}
+
+/* ---------- 听音找一找配置 ---------- */
+let u5ReviseThings = [];
+const U5_REVISE_ASKS = [
+  { word: '厚字典', clip: 'q-thick', again: 'r-thick' },
+  { word: '湿雨伞', clip: 'q-wet',   again: 'r-wet' },
+  { word: '热汤碗', clip: 'q-hot',   again: 'r-hot' },
+  { word: '冰棒',   clip: 'q-cold',  again: 'r-cold' },
+];
+
+const BEATS = [
+  /* 1. 开场 */
+  ['u5_intro', '单元 5 · 去学校吧！', (m, D) => {
+    const p = panel(0);
+    u5_bg(p, 'bg_u5_classroom.jpg', 0.16);
+    sfx('u5_intro', 0.2, 'bell', 0.55);
+
+    u5_badge(p, '单元 5 · 去学校吧！Let\'s Go to School!', 84, 62, '#2d7dd2', 0.1);
+    const titleBox = u5_card(p, 585, 130, 880, 240, { fill: 'rgba(255,255,255,0.94)', stroke: '#ffbe0b', sw: 5, rx: 36 });
+    T(titleBox, '去学校吧！', { x: 440, y: 105, size: 62, fill: '#2d7dd2', weight: 700, anchor: 'middle' });
+    T(titleBox, 'Let\'s Go to School! · 厚薄、干湿与冷热大发现', { x: 440, y: 178, size: 28, fill: '#ff5a5f', weight: 700, anchor: 'middle' });
+    put(titleBox, { o: 0, s: 0.86 }); tw(titleBox, { o: 1, s: 1 }, 0.2, 0.5, back);
+
+    const expWrap = G(p, { x: 350, y: 575, o: 0 });
+    const exp = Doudou.create(expWrap, { x: 0, y: 0, s: 1.58, hat: true, scarf: true, prop: 'magnifier', propSide: 'L', eyeColor: 'brown', expr: 'happy', armL: 28, armR: -115 });
+    tw(expWrap, { o: 1, y: 520 }, 0.2, 0.6, out);
+
+    const cards = [
+      ['m_tt', '厚和薄 Thick & thin', '#2bb673', 775,  505],
+      ['m_wd', '湿和干 Wet & dry',    '#2d7dd2', 1185, 505],
+      ['m_hc', '热和冷 Hot & cold',   '#ff5a5f', 980,  645],
+    ];
+    cards.forEach(([mkName, label, col, tx, ty], idx) => {
+      const b = G(p, { x: tx, y: ty, o: 0, s: 0.82 });
+      mk('rect', { x: -185, y: -44, width: 370, height: 88, rx: 28, fill: '#ffffff', stroke: col, 'stroke-width': 4 }, b);
+      mk('circle', { cx: -135, cy: 0, r: 16, fill: col }, b);
+      T(b, idx + 1, { x: -135, y: 7, size: 20, fill: '#ffffff', weight: 800, anchor: 'middle' });
+      T(b, label, { x: 18, y: 10, size: 26, fill: col, weight: 700, anchor: 'middle' });
+      const tAt = m(mkName);
+      tw(b, { o: 1, s: 1 }, tAt, 0.36, back);
+      sfx('u5_intro', tAt, 'pop', 0.45);
+    });
+
+    clockRun(t => {
+      Doudou.animateIdle(exp, t, { armL: 28, armR: -115 + 16 * Math.sin(t * 6.5) });
+    }, D, { tail: true });
+  }, { lead: false }],
+
+  /* 2. 厚和薄 Thick and thin（对比选出厚物品涂色） */
+  ['u5_thick_thin', '厚和薄 Thick and thin', (m) => {
+    const p = panel(0);
+    u5_bg(p, 'bg_u5_classroom.jpg', 0.2);
+    u5_badge(p, '厚和薄 Thick and thin', 84, 60, '#2bb673', 0.1);
+
+    const pairs = [
+      { y: 120, lKind: 'thick_book', lLbl: '绿字典', rKind: 'thin_paper',   rLbl: '白纸张', col: '#2bb673', thickLeft: true },
+      { y: 492, lKind: 'thin_cracker', lLbl: '脆饼干', rKind: 'thick_sandwich', rLbl: '三明治', col: '#f77f00', thickLeft: false },
+    ];
+
+    S.thickBoxes = [];
+    pairs.forEach((pr, idx) => {
+      const card = u5_card(p, 80, pr.y, 795, 342, { fill: 'rgba(255,253,247,0.95)', stroke: pr.col, sw: 4, rx: 30 });
+      T(card, `第 ${idx + 1} 组：哪个是厚（thick）的？给正确的格子涂上颜色！`, { x: 398, y: 46, size: 24, fill: '#2b241d', weight: 800, anchor: 'middle' });
+
+      const gL = G(card, { x: 220, y: 155, s: 1.35 });
+      u5_drawItem(gL, pr.lKind);
+      T(card, pr.lLbl, { x: 220, y: 248, size: 23, fill: '#2b241d', weight: 700, anchor: 'middle' });
+      const boxL = mk('rect', { x: 185, y: 266, width: 70, height: 48, rx: 12, fill: '#ffffff', stroke: '#64748b', 'stroke-width': 3 }, card);
+
+      const gR = G(card, { x: 575, y: 155, s: 1.35 });
+      u5_drawItem(gR, pr.rKind);
+      T(card, pr.rLbl, { x: 575, y: 248, size: 23, fill: '#2b241d', weight: 700, anchor: 'middle' });
+      const boxR = mk('rect', { x: 540, y: 266, width: 70, height: 48, rx: 12, fill: '#ffffff', stroke: '#64748b', 'stroke-width': 3 }, card);
+
+      S.thickBoxes.push({ winBox: pr.thickLeft ? boxL : boxR, col: pr.col });
+      put(card, { o: 0, s: 0.9 });
+      tw(card, { o: 1, s: 1 }, m('tt_go', idx * 0.3), 0.4, back);
+    });
+  }, {
+    lead: false,
+    hold: 1.5,
+    ask: done => quiz({ x: 915, y: 175, w: 605, cls: 'side' }, [
+      {
+        id: 'u5-q-tt1',
+        prompt: ['第一组中，哪一个比较【厚 thick】？'],
+        build: choice(
+          [
+            [u5_swatch('#2bb673'), '绿字典 · thick'],
+            [u5_swatch('#cbd5e1'), '白纸张 · thin'],
+          ],
+          0,
+          '答对了！厚厚的字典是 thick，薄薄的一张纸是 thin！',
+          [null, '白纸张薄薄一片，是 thin 哦！'],
+          () => {
+            const b = S.thickBoxes?.[0];
+            if (b) b.winBox.setAttribute('fill', b.col);
+            u5_playSfx('chime', 0.6);
+          }
+        ),
+      },
+      {
+        id: 'u5-q-tt2',
+        prompt: ['第二组中，哪一个比较【厚 thick】？'],
+        build: choice(
+          [
+            [u5_swatch('#ffd166'), '脆饼干 · thin'],
+            [u5_swatch('#f77f00'), '三明治 · thick'],
+          ],
+          1,
+          '真棒！夹了好几层的三明治厚厚的（thick），脆饼干薄薄的（thin）！',
+          ['脆饼干薄薄一片，是 thin 哦！', null],
+          () => {
+            const b = S.thickBoxes?.[1];
+            if (b) b.winBox.setAttribute('fill', b.col);
+            u5_playSfx('chime', 0.6);
+          }
+        ),
+      },
+    ], done, '厚和薄涂色'),
+  }],
+
+  /* 3. 湿和干 Wet and dry（4 选 2 拖拉湿物品） */
+  ['u5_wet_dry', '湿和干 Wet and dry', (m, D) => {
+    const p = panel(0);
+    u5_bg(p, 'bg_u5_classroom.jpg', 0.16);
+    u5_badge(p, '湿和干 Wet and dry', 84, 60, '#0284c7', 0.1);
+
+    const board = u5_card(p, 80, 112, 800, 726, { fill: 'rgba(255,253,247,0.95)', stroke: '#7dd3fc', sw: 5, rx: 32 });
+    T(board, '找出 2 样【湿漉漉 wet】的东西放进蓝色水滴篮！', { x: 400, y: 46, size: 24, fill: '#2b241d', weight: 700, anchor: 'middle' });
+
+    const expWrap = G(p, { x: 215, y: 390 });
+    const exp = Doudou.create(expWrap, { x: 0, y: 0, s: 1.08, hat: true, scarf: true, eyeColor: 'brown', expr: 'happy', armL: 22, armR: -18 });
+
+    mk('rect', { x: 270, y: 120, width: 470, height: 340, rx: 28, fill: '#f0f9ff', stroke: '#0284c7', 'stroke-width': 4, 'stroke-dasharray': '10 8' }, board);
+    T(board, '蓝色水滴篮 · Wet', { x: 505, y: 162, size: 26, fill: '#0369a1', weight: 800, anchor: 'middle' });
+    mk('path', { d: 'M36 520 H764', stroke: '#bae6fd', 'stroke-width': 3, 'stroke-dasharray': '10 8' }, board);
+
+    const tray = G(p, { x: 0, y: 0, o: 0 });
+    S.wdTray = tray;
+    const preview = [
+      ['wet_umbrella', 180, 710, '湿雨伞 Wet', '#0284c7'],
+      ['dry_towel',    380, 710, '干毛巾 Dry', '#db2777'],
+      ['wet_boots',    580, 710, '湿雨靴 Wet', '#d97706'],
+      ['dry_book',     780, 710, '干书本 Dry', '#7c3aed'],
+    ];
+    preview.forEach(([kind, px, py, lbl, col]) => {
+      const g = G(tray, { x: px, y: py });
+      mk('rect', { x: -78, y: -56, width: 156, height: 120, rx: 22, fill: '#ffffff', stroke: col, 'stroke-width': 3 }, g);
+      u5_drawItem(g, kind);
+      T(g, lbl, { x: 0, y: 84, size: 20, fill: col, weight: 700, anchor: 'middle' });
+    });
+    show(tray, m('wd_go'), 0.35);
+
+    clockRun(t => {
+      Doudou.animateIdle(exp, t, { armL: 22, armR: -18 });
+    }, D, { tail: true });
+    void board;
+  }, {
+    lead: false,
+    hold: 1.5,
+    ask: done => quiz({ x: 915, y: 175, w: 605, cls: 'side' }, [{
+      id: 'u5-q-wet',
+      prompt: ['哪两样东西【湿漉漉的 wet】？拖进水滴篮或轻点它们！'],
+      build: (body, api) => {
+        if (S.wdTray) S.wdTray.style.display = 'none';
+        const L = qlayer();
+        const progEl = h('div', 'sc-progress', '已找到 0 / 2 样湿物品 · 拖进水滴篮或轻点物品');
+        body.append(progEl);
+
+        const stage = $('stage');
+        const pt = e => {
+          const r = stage.getBoundingClientRect();
+          return [(e.clientX - r.left) * SW / r.width, (e.clientY - r.top) * SH / r.height];
+        };
+
+        const SLOTS = {
+          left:  { x: 475, y: 380, filled: false },
+          right: { x: 695, y: 380, filled: false },
+        };
+
+        const defs = [
+          { id: 'wet_umbrella', label: '湿雨伞 Wet', col: '#0284c7', home: [180, 710], slot: 'left',  wet: true,  hint: '' },
+          { id: 'dry_towel',    label: '干毛巾 Dry', col: '#db2777', home: [380, 710], slot: null,    wet: false, hint: '干净爽口的粉红毛巾是干的（dry），没有滴水哦！' },
+          { id: 'wet_boots',    label: '湿雨靴 Wet', col: '#d97706', home: [580, 710], slot: 'right', wet: true,  hint: '' },
+          { id: 'dry_book',     label: '干书本 Dry', col: '#7c3aed', home: [780, 710], slot: null,    wet: false, hint: '放在书桌上的紫色书本是干的（dry）哦！' },
+        ];
+
+        let locked = false, count = 0;
+        const nodes = [];
+
+        const finishWet = () => {
+          progEl.textContent = '已找到 2 / 2 样湿物品 · 滴答滴答分清啦！';
+          u5_playSfx('splash', 0.55);
+          u5_playSfx('applause', 0.5);
+          api.grade(true, '太棒了！淋过雨的雨伞和踩水洼的雨靴都是湿的（wet），毛巾和书本是干的（dry）！');
+        };
+
+        const snapWet = item => {
+          if (item.placed) return;
+          item.placed = true;
+          const sl = SLOTS[item.slot];
+          sl.filled = true;
+          count++;
+          fx(item.g, { x: sl.x, y: sl.y, s: 1.05 }, 0, 0.3, back);
+          u5_playSfx('chime', 0.6);
+          if (count === 2) finishWet();
+          else progEl.textContent = '已找到 1 / 2 样湿物品 · 再找出另一样湿物品！';
+        };
+
+        const tryPlace = (item, x, y, tapMode = false) => {
+          if (locked || item.placed) return;
+          const inBox = tapMode || (x >= 320 && x <= 840 && y >= 200 && y <= 580);
+          if (!inBox) {
+            fx(item.g, { x: item.home[0], y: item.home[1] }, 0, 0.25, out);
+            return;
+          }
+          if (!item.wet) {
+            u5_playSfx('boing', 0.55);
+            fx(item.g, { x: item.home[0], y: item.home[1] }, 0, 0.28, out);
+            shakeFx(item.g);
+            api.grade(false, item.hint);
+            return;
+          }
+          snapWet(item);
+        };
+
+        defs.forEach(def => {
+          const g = G(L, { x: def.home[0], y: def.home[1] });
+          g.classList.add('sc-drag');
+          g.setAttribute('tabindex', '0');
+          g.setAttribute('role', 'button');
+          g.setAttribute('aria-label', def.label);
+          mk('rect', { x: -78, y: -56, width: 156, height: 120, rx: 22, fill: '#ffffff', stroke: def.col, 'stroke-width': 3 }, g);
+          u5_drawItem(g, def.id);
+          T(g, def.label, { x: 0, y: 84, size: 20, fill: def.col, weight: 700, anchor: 'middle' });
+          const item = { ...def, g, placed: false };
+          nodes.push(item);
+
+          let drag = null;
+          g.addEventListener('pointerdown', e => {
+            if (locked || item.placed) return;
+            e.preventDefault();
+            const p0 = pt(e);
+            drag = { dx: p0[0] - st(g).x, dy: p0[1] - st(g).y, sx: p0[0], sy: p0[1], moved: false };
+            L.append(g);
+            g.setPointerCapture(e.pointerId);
+          });
+          g.addEventListener('pointermove', e => {
+            if (!drag) return;
+            const p0 = pt(e);
+            if (Math.hypot(p0[0] - drag.sx, p0[1] - drag.sy) > 8) drag.moved = true;
+            if (drag.moved) put(g, { x: p0[0] - drag.dx, y: p0[1] - drag.dy });
+          });
+          const endDrag = () => {
+            if (!drag) return;
+            const moved = drag.moved;
+            drag = null;
+            tryPlace(item, st(g).x, st(g).y, !moved);
+          };
+          g.addEventListener('pointerup', endDrag);
+          g.addEventListener('lostpointercapture', endDrag);
+          keyAct(g, () => tryPlace(item, def.home[0], def.home[1], true));
+        });
+
+        return {
+          hint: [kbd('1–4'), ' 选湿物品 · 或拖进水滴篮'],
+          reveal() {
+            nodes.filter(n => n.wet && !n.placed).forEach(snapWet);
+            return '滴水的雨伞和湿雨靴是湿的（wet），干毛巾和书本是干的（dry）！';
+          },
+          lock() { locked = true; nodes.forEach(n => { n.g.style.cursor = 'default'; }); },
+          key(e) {
+            const idx = +e.key - 1;
+            if (idx >= 0 && idx < nodes.length) {
+              const it = nodes[idx];
+              tryPlace(it, it.home[0], it.home[1], true);
+              return true;
+            }
+            return false;
+          },
+        };
+      },
+    }], done, '湿和干挑战'),
+  }],
+
+  /* 4. 热和冷 Hot and cold（热汤热气 vs 冰棒冰霜 + 观察原因问答） */
+  ['u5_hot_cold', '热和冷 Hot and cold', (m) => {
+    const p = panel(0);
+    u5_bg(p, 'bg_u5_classroom.jpg', 0.2);
+    u5_badge(p, '热和冷 Hot and cold', 84, 60, '#ff5a5f', 0.1);
+
+    // 左边两个对比卡片
+    const hotCard = u5_card(p, 80, 128, 385, 680, { fill: 'rgba(255,253,247,0.95)', stroke: '#ff5a5f', sw: 4.5, rx: 30 });
+    T(hotCard, '热汤碗 · Hot', { x: 192, y: 60, size: 30, fill: '#ff5a5f', weight: 800, anchor: 'middle' });
+    const hArt = G(hotCard, { x: 192, y: 295, s: 2.0 });
+    u5_drawItem(hArt, 'hot_soup');
+    // 红色温度计
+    mk('rect', { x: 178, y: 430, width: 28, height: 110, rx: 14, fill: '#fee2e2', stroke: '#2b241d', 'stroke-width': 2.6 }, hotCard);
+    mk('rect', { x: 185, y: 448, width: 14, height: 86, rx: 7, fill: '#ff5a5f' }, hotCard);
+    mk('circle', { cx: 192, cy: 540, r: 18, fill: '#ff5a5f', stroke: '#2b241d', 'stroke-width': 2.6 }, hotCard);
+    T(hotCard, '冒着热气 · 好热！', { x: 192, y: 615, size: 25, fill: '#dc2626', weight: 700, anchor: 'middle' });
+    put(hotCard, { o: 0, s: 0.9 }); tw(hotCard, { o: 1, s: 1 }, m('hc_hot'), 0.4, back);
+
+    const coldCard = u5_card(p, 495, 128, 385, 680, { fill: 'rgba(255,253,247,0.95)', stroke: '#0284c7', sw: 4.5, rx: 30 });
+    T(coldCard, '小冰棒 · Cold', { x: 192, y: 60, size: 30, fill: '#0284c7', weight: 800, anchor: 'middle' });
+    const cArt = G(coldCard, { x: 192, y: 295, s: 2.0 });
+    u5_drawItem(cArt, 'cold_ice');
+    // 蓝色温度计
+    mk('rect', { x: 178, y: 430, width: 28, height: 110, rx: 14, fill: '#e0f2fe', stroke: '#2b241d', 'stroke-width': 2.6 }, coldCard);
+    mk('rect', { x: 185, y: 506, width: 14, height: 28, rx: 7, fill: '#38bdf8' }, coldCard);
+    mk('circle', { cx: 192, cy: 540, r: 18, fill: '#38bdf8', stroke: '#2b241d', 'stroke-width': 2.6 }, coldCard);
+    T(coldCard, '结着冰霜 · 好冷！', { x: 192, y: 615, size: 25, fill: '#0369a1', weight: 700, anchor: 'middle' });
+    put(coldCard, { o: 0, s: 0.9 }); tw(coldCard, { o: 1, s: 1 }, m('hc_cold'), 0.4, back);
+  }, {
+    lead: false,
+    hold: 1.5,
+    ask: done => quiz({ x: 915, y: 175, w: 605, cls: 'side' }, [
+      {
+        id: 'u5-q-hot',
+        prompt: ['左边的两样食物中，哪一个是【热 hot】的？'],
+        build: choice(
+          [
+            [u5_swatch('#ff5a5f'), '热汤碗 · hot'],
+            [u5_swatch('#38bdf8'), '小冰棒 · cold'],
+          ],
+          0,
+          '答对了！红碗里的热汤滚烫（hot），小心吹一吹再喝！',
+          [null, '小冰棒是冰冰冷冷（cold）的哦！']
+        ),
+      },
+      {
+        id: 'u5-q-why',
+        prompt: ['为什么你会知道这碗汤是【热 hot】的？'],
+        build: choice(
+          [
+            [u5_swatch('#94a3b8'), '因为碗上冒着热气！'],
+            [u5_swatch('#38bdf8'), '因为上面结了冰霜！'],
+          ],
+          0,
+          '太会观察了！看到食物上方冒出白色热气，就能判断它是热的（hot）！',
+          [null, '结冰霜是冰冰冷冷（cold）的样子哦！']
+        ),
+      },
+      {
+        id: 'u5-q-cold',
+        prompt: ['那蓝色的冰棒摸起来和吃起来感觉怎么样？'],
+        build: choice(
+          [
+            [u5_swatch('#ff5a5f'), '热 hot'],
+            [u5_swatch('#38bdf8'), '冷 cold'],
+          ],
+          1,
+          '全对啦！冰棒凉丝丝的，是冷（cold）！',
+          ['冰棒冰冰凉凉的，不是热的哦！', null]
+        ),
+      },
+    ], done, '热和冷观察'),
+  }],
+
+  /* 5. 复习游戏：听音找一找（findWords） */
+  ['u5_revise', '复习游戏 · 教室大点名', (m) => {
+    const p = panel(0);
+    u5_bg(p, 'bg_u5_classroom.jpg', 0.14);
+    u5_badge(p, '复习游戏 · 教室特征点名', 84, 60, '#9d4edd', 0.1);
+    const bar = u5_card(p, 470, 32, 1020, 58, { fill: 'rgba(255,255,255,0.94)', stroke: '#9d4edd', sw: 3, rx: 29 });
+    T(bar, '听听小豆豆的话，点一点对应的厚薄、干湿、冷热物品！', { x: 510, y: 38, size: 25, fill: '#2b241d', weight: 700, anchor: 'middle' });
+
+    const specs = [
+      { id: 'thick_book',   x: 310,  y: 280, lbl: '厚字典 thick', col: '#2bb673', side: 'below' },
+      { id: 'thin_paper',   x: 800,  y: 280, lbl: '薄纸张 thin',  col: '#64748b', side: 'below' },
+      { id: 'wet_umbrella', x: 1290, y: 280, lbl: '湿雨伞 wet',   col: '#0284c7', side: 'below' },
+      { id: 'dry_towel',    x: 310,  y: 635, lbl: '干毛巾 dry',   col: '#db2777', side: 'above' },
+      { id: 'hot_soup',     x: 800,  y: 635, lbl: '热汤碗 hot',   col: '#ff5a5f', side: 'above' },
+      { id: 'cold_ice',     x: 1290, y: 635, lbl: '冰棒 cold',    col: '#38bdf8', side: 'above' },
+    ];
+
+    const map = {};
+    specs.forEach(sp => {
+      const g = G(p, { x: sp.x, y: sp.y });
+      mk('rect', { x: -165, y: -125, width: 330, height: 245, rx: 28, fill: 'rgba(255,255,255,0.95)', stroke: sp.col, 'stroke-width': 4 }, g);
+      const art = G(g, { x: 0, y: -18, s: 1.45 });
+      u5_drawItem(art, sp.id);
+      T(g, sp.lbl, { x: 0, y: 92, size: 25, fill: sp.col, weight: 800, anchor: 'middle' });
+      map[sp.id] = g;
+    });
+
+    u5ReviseThings = [
+      { g: map.thick_book,   word: '厚字典', clip: 'w-thick', side: 'below' },
+      { g: map.thin_paper,   word: '薄纸张', clip: 'w-thin',  side: 'below' },
+      { g: map.wet_umbrella, word: '湿雨伞', clip: 'w-wet',   side: 'below' },
+      { g: map.dry_towel,    word: '干毛巾', clip: 'w-dry',   side: 'above' },
+      { g: map.hot_soup,     word: '热汤碗', clip: 'w-hot',   side: 'above' },
+      { g: map.cold_ice,     word: '冰棒',   clip: 'w-cold',  side: 'above' },
+    ];
+    void m;
+  }, {
+    lead: false,
+    ask: done => findWords(u5ReviseThings, U5_REVISE_ASKS, done, { end: 'q-u5-done', there: 'q-there', minBox: 120 }),
+    video: false,
+  }],
+
+  /* 6. 总结结尾 */
+  ['u5_outro', '通关成功 · 校园小博士！', (m, D) => {
+    const p = panel(0);
+    u5_bg(p, 'bg_u5_classroom.jpg', 0.18);
+    sfx('u5_outro', 0.15, 'applause', 0.45);
+    sfx('u5_outro', 0.25, 'chime', 0.5);
+
+    u5_badge(p, '单元 5 通关 · 校园小博士！', 84, 62, '#2bb673', 0.1);
+    const expWrap = G(p, { x: 330, y: 515 });
+    const exp = Doudou.create(expWrap, { x: 0, y: 0, s: 1.54, hat: true, scarf: true, prop: 'badge', propSide: 'R', eyeColor: 'brown', expr: 'happy', armL: 24, armR: -78 });
+
+    const wins = [
+      ['o1', '分辨厚（Thick）与薄（Thin）的物体', '#2bb673', 0, 'dot'],
+      ['o2', '分清湿漉漉（Wet）与干爽（Dry）', '#0284c7', 1, 'star'],
+      ['o3', '通过热气和冰霜分辨热（Hot）与冷（Cold）', '#ff5a5f', 2, 'sq'],
+    ];
+    wins.forEach(([mkName, txt, col, idx, icon]) => {
+      const card = G(p, { x: 640, y: 245 + idx * 175, o: 0, s: 0.88 });
+      mk('rect', { x: 0, y: -48, width: 820, height: 112, rx: 28, fill: 'rgba(255,255,255,0.95)', stroke: col, 'stroke-width': 4 }, card);
+      if (icon === 'dot') mk('circle', { cx: 48, cy: 8, r: 16, fill: col }, card);
+      else if (icon === 'star') mk('polygon', { points: '48,-10 54,2 66,2 56,10 60,22 48,15 36,22 40,10 30,2 42,2', fill: col }, card);
+      else mk('rect', { x: 34, y: -6, width: 28, height: 28, rx: 5, fill: col }, card);
+      T(card, txt, { x: 86, y: 18, size: 32, fill: '#2b241d', weight: 700 });
+      tw(card, { o: 1, s: 1 }, m(mkName), 0.35, back);
+    });
+
+    clockRun(t => {
+      put(expWrap, { y: 515 - Math.abs(12 * Math.sin(t * 4)) });
+      Doudou.animateIdle(exp, t, { armL: 24, armR: -78 + 14 * Math.sin(t * 6.5) });
+    }, D, { tail: true });
+  }, { lead: false }],
+].map(([id, title, run, extra]) => ({ id, title, run, ...extra }));
+
+window.MUSIC_LEVELS = { under: -16, open: -8 };
+music('audio/bgm/go_school.mp3', ['u5_intro', 'u5_thick_thin', 'u5_wet_dry', 'u5_hot_cold', 'u5_revise', 'u5_outro'], 0.34);
+
+boot();
+</script>
+</body>
+</html>

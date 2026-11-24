@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>来做朋友吧！Let's Be Friends! · 趣味科学小课堂</title>
+<link rel="stylesheet" href="../lib/engine.css">
+<link rel="expect" href="#bar" blocking="render">
+</head>
+<body>
+<script src="../lib/engine.js"></script>
+<script src="../lib/doudou.js"></script>
+<script src="audio/zh/timings.js"></script>
+<script>
+'use strict';
+const CHAPTER = { number: 3, title: '来做朋友吧！Let\'s Be Friends!', minutes: 4, language: 'zh', film: true, questionKeys: false };
+try { if (localStorage.getItem('captions') === null) setCaptions(true, false); } catch {}
+
+/* ---------- Unit 3 绘本舞台助手（u3_ 前缀） ---------- */
+function u3_bg(p, imgName, veil = 0.2) {
+  mk('image', { href: `../img/${imgName}`, x: 0, y: 0, width: 1600, height: 900, preserveAspectRatio: 'xMidYMid slice' }, p);
+  if (veil > 0) mk('rect', { x: 0, y: 0, width: 1600, height: 900, fill: `rgba(255,253,247,${veil})` }, p);
+}
+
+function u3_badge(p, label, x = 80, y = 60, fill = '#2bb673', t0 = 0.1) {
+  const g = G(p, { x, y, o: 0 });
+  const w = Math.max(160, label.length * 25 + 54);
+  mk('rect', { x: 4, y: -24, width: w, height: 52, rx: 26, fill: 'rgba(60,40,10,0.14)' }, g);
+  mk('rect', { x: 0, y: -28, width: w, height: 52, rx: 26, fill }, g);
+  T(g, label, { x: w / 2, y: 7, size: 24, fill: '#ffffff', weight: 700, anchor: 'middle' });
+  tw(g, { o: 1 }, t0, 0.3);
+  return g;
+}
+
+function u3_card(p, x, y, w, h, { fill = 'rgba(255,253,247,0.93)', stroke = '#f0dec0', sw = 4, rx = 28 } = {}) {
+  const g = G(p, { x, y });
+  mk('rect', { x: 6, y: 10, width: w, height: h, rx, fill: 'rgba(80,50,20,0.1)' }, g);
+  mk('rect', { x: 0, y: 0, width: w, height: h, rx, fill, stroke, 'stroke-width': sw }, g);
+  return g;
+}
+
+const U3_SFX_CACHE = {};
+function u3_playSfx(name, vol = 0.6) {
+  try {
+    const a = U3_SFX_CACHE[name] || (U3_SFX_CACHE[name] = new Audio(`audio/sfx/${name}.mp3`));
+    a.currentTime = 0;
+    a.volume = vol * +($('volume')?.value ?? 1);
+    a.play().catch(() => {});
+  } catch {}
+}
+
+function u3_swatch(hex, txt = '') {
+  const sp = h('span', 'sc-swatch');
+  sp.style.background = hex;
+  if (txt) {
+    sp.style.color = '#ffffff';
+    sp.style.fontWeight = '800';
+    sp.style.fontSize = '17px';
+    sp.style.display = 'inline-flex';
+    sp.style.alignItems = 'center';
+    sp.style.justifyContent = 'center';
+    sp.textContent = txt;
+  }
+  return sp;
+}
+
+/* 大小物品绘制（纯 SVG） */
+function u3_drawSizeToy(par, kind) {
+  if (kind === 'big_ball') {
+    mk('circle', { cx: 0, cy: 0, r: 46, fill: '#ff5a5f', stroke: '#2b241d', 'stroke-width': 3 }, par);
+    mk('path', { d: 'M-34,-28 Q0,4 34,-28 M-36,24 Q0,-4 36,24', fill: 'none', stroke: '#ffd60a', 'stroke-width': 8, 'stroke-linecap': 'round' }, par);
+    mk('circle', { cx: 0, cy: 0, r: 46, fill: 'none', stroke: '#2b241d', 'stroke-width': 3 }, par);
+  } else if (kind === 'small_cherry') {
+    mk('path', { d: 'M-6,4 Q0,-22 10,-28 M12,6 Q14,-18 10,-28', fill: 'none', stroke: '#40916c', 'stroke-width': 3.5, 'stroke-linecap': 'round' }, par);
+    mk('circle', { cx: -8, cy: 14, r: 12, fill: '#e63946', stroke: '#2b241d', 'stroke-width': 2.6 }, par);
+    mk('circle', { cx: 12, cy: 16, r: 12, fill: '#e63946', stroke: '#2b241d', 'stroke-width': 2.6 }, par);
+  } else if (kind === 'big_gift') {
+    mk('rect', { x: -42, y: -34, width: 84, height: 74, rx: 10, fill: '#38bdf8', stroke: '#2b241d', 'stroke-width': 3 }, par);
+    mk('rect', { x: -46, y: -40, width: 92, height: 18, rx: 6, fill: '#0284c7', stroke: '#2b241d', 'stroke-width': 3 }, par);
+    mk('rect', { x: -8, y: -40, width: 16, height: 80, fill: '#ffd60a', stroke: '#2b241d', 'stroke-width': 2.4 }, par);
+  } else if (kind === 'small_block') {
+    mk('rect', { x: -18, y: -14, width: 36, height: 36, rx: 6, fill: '#8ac926', stroke: '#2b241d', 'stroke-width': 2.8 }, par);
+    mk('circle', { cx: 0, cy: 4, r: 6, fill: '#ffffff', opacity: 0.7 }, par);
+  }
+}
+
+/* 回形针绘制 */
+function u3_drawClip(par, x, y, col = '#2d7dd2') {
+  const g = G(par, { x, y });
+  mk('path', {
+    d: 'M-44,-4 H38 C52,-4 52,16 38,16 H-34 C-46,16 -46,0 -34,0 H26 C34,0 34,10 26,10 H-24',
+    fill: 'none', stroke: col, 'stroke-width': 5.5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round',
+  }, g);
+  return g;
+}
+
+/* 复习场景 6 张插画 */
+function u3_drawReviseItem(par, kind) {
+  if (kind === 'long_rope') {
+    mk('path', { d: 'M-95,12 Q-45,-20 0,12 Q45,42 95,8', fill: 'none', stroke: '#ff5a5f', 'stroke-width': 12, 'stroke-linecap': 'round' }, par);
+    mk('circle', { cx: -95, cy: 12, r: 8, fill: '#b91c1c' }, par);
+    mk('circle', { cx: 95, cy: 8, r: 8, fill: '#b91c1c' }, par);
+  } else if (kind === 'short_rope') {
+    mk('path', { d: 'M-36,10 Q0,-8 36,10', fill: 'none', stroke: '#f77f00', 'stroke-width': 12, 'stroke-linecap': 'round' }, par);
+  } else if (kind === 'tall_tree') {
+    mk('rect', { x: -12, y: -6, width: 24, height: 74, rx: 6, fill: '#8d5524', stroke: '#2b241d', 'stroke-width': 2.8 }, par);
+    mk('circle', { cx: 0, cy: -36, r: 42, fill: '#52b788', stroke: '#2b241d', 'stroke-width': 3 }, par);
+    mk('circle', { cx: -28, cy: -16, r: 26, fill: '#40916c', stroke: '#2b241d', 'stroke-width': 2.8 }, par);
+    mk('circle', { cx: 28, cy: -16, r: 26, fill: '#40916c', stroke: '#2b241d', 'stroke-width': 2.8 }, par);
+  } else if (kind === 'short_bush') {
+    mk('ellipse', { cx: 0, cy: 36, rx: 48, ry: 26, fill: '#74c69d', stroke: '#2b241d', 'stroke-width': 2.8 }, par);
+    mk('circle', { cx: -18, cy: 34, r: 5, fill: '#ff7aa2' }, par);
+    mk('circle', { cx: 12, cy: 26, r: 5, fill: '#ffd60a' }, par);
+    mk('circle', { cx: 24, cy: 40, r: 5, fill: '#ff7aa2' }, par);
+  } else if (kind === 'big_melon') {
+    mk('ellipse', { cx: 0, cy: 4, rx: 58, ry: 48, fill: '#2bb673', stroke: '#2b241d', 'stroke-width': 3.2 }, par);
+    mk('path', { d: 'M-24,-40 Q-10,4 -24,48 M0,-44 Q14,4 0,52 M24,-40 Q36,4 24,48', fill: 'none', stroke: '#1b4332', 'stroke-width': 5, 'stroke-linecap': 'round' }, par);
+  } else if (kind === 'small_berry') {
+    mk('path', { d: 'M0,-12 C-16,-12 -18,8 -8,20 C-2,28 2,28 8,20 C18,8 16,-12 0,-12 Z', fill: '#ff4d6d', stroke: '#2b241d', 'stroke-width': 2.8 }, par);
+    mk('path', { d: 'M-10,-12 Q0,-22 10,-12', fill: '#40916c', stroke: '#2b241d', 'stroke-width': 2.4 }, par);
+  }
+}
+
+/* ---------- 听音找一找配置 ---------- */
+let u3ReviseThings = [];
+const U3_REVISE_ASKS = [
+  { word: '长绳子', clip: 'q-long', again: 'r-long' },
+  { word: '矮灌木', clip: 'q-short-bush', again: 'r-short-bush' },
+  { word: '大西瓜', clip: 'q-big-melon', again: 'r-big-melon' },
+];
+
+const BEATS = [
+  /* 1. 开场 */
+  ['u3_intro', '单元 3 · 来做朋友吧！', (m, D) => {
+    const p = panel(0);
+    u3_bg(p, 'bg_u3_playground.jpg', 0.16);
+    sfx('u3_intro', 0.2, 'bell', 0.55);
+
+    u3_badge(p, '单元 3 · 来做朋友吧！Let\'s Be Friends!', 84, 62, '#2bb673', 0.1);
+    const titleBox = u3_card(p, 585, 130, 880, 240, { fill: 'rgba(255,255,255,0.94)', stroke: '#ffbe0b', sw: 5, rx: 36 });
+    T(titleBox, '来做朋友吧！', { x: 440, y: 105, size: 64, fill: '#2bb673', weight: 700, anchor: 'middle' });
+    T(titleBox, 'Let\'s Be Friends! · 比比大小、长短和高矮', { x: 440, y: 178, size: 29, fill: '#2d7dd2', weight: 700, anchor: 'middle' });
+    put(titleBox, { o: 0, s: 0.86 }); tw(titleBox, { o: 1, s: 1 }, 0.2, 0.5, back);
+
+    const expWrap = G(p, { x: 350, y: 575, o: 0 });
+    const exp = Doudou.create(expWrap, { x: 0, y: 0, s: 1.58, hat: true, scarf: true, prop: 'magnifier', propSide: 'L', eyeColor: 'brown', expr: 'happy', armL: 28, armR: -115 });
+    tw(expWrap, { o: 1, y: 520 }, 0.2, 0.6, out);
+
+    const cards = [
+      ['m_bs', '大和小 Big & small',   '#ff5a5f', 775,  505],
+      ['m_ls', '长和短 Long & short', '#2d7dd2', 1185, 505],
+      ['m_ts', '高和矮 Tall & short', '#f77f00', 980,  645],
+    ];
+    cards.forEach(([mkName, label, col, tx, ty], idx) => {
+      const b = G(p, { x: tx, y: ty, o: 0, s: 0.82 });
+      mk('rect', { x: -185, y: -44, width: 370, height: 88, rx: 28, fill: '#ffffff', stroke: col, 'stroke-width': 4 }, b);
+      mk('circle', { cx: -135, cy: 0, r: 16, fill: col }, b);
+      T(b, idx + 1, { x: -135, y: 7, size: 20, fill: '#ffffff', weight: 800, anchor: 'middle' });
+      T(b, label, { x: 18, y: 10, size: 26, fill: col, weight: 700, anchor: 'middle' });
+      const tAt = m(mkName);
+      tw(b, { o: 1, s: 1 }, tAt, 0.36, back);
+      sfx('u3_intro', tAt, 'pop', 0.45);
+    });
+
+    clockRun(t => {
+      Doudou.animateIdle(exp, t, { armL: 28, armR: -115 + 16 * Math.sin(t * 6.5) });
+    }, D, { tail: true });
+  }, { lead: false }],
+
+  /* 2. 大和小 Big and small（4 选 2 拖拉大玩具进箱子） */
+  ['u3_big_small', '大和小 Big and small', (m, D) => {
+    const p = panel(0);
+    u3_bg(p, 'bg_u3_playground.jpg', 0.16);
+    u3_badge(p, '大和小 Big and small', 84, 60, '#ff5a5f', 0.1);
+
+    const board = u3_card(p, 80, 112, 800, 726, { fill: 'rgba(255,253,247,0.95)', stroke: '#ffd166', sw: 5, rx: 32 });
+    T(board, '把 2 个【大 Big (B)】的玩具拖进金色大箱子，或轻点它们！', { x: 400, y: 46, size: 23, fill: '#2b241d', weight: 700, anchor: 'middle' });
+
+    const expWrap = G(p, { x: 215, y: 390 });
+    const exp = Doudou.create(expWrap, { x: 0, y: 0, s: 1.08, hat: true, scarf: true, eyeColor: 'brown', expr: 'happy', armL: 22, armR: -18 });
+    S.bsDoudou = exp;
+
+    // 金色大玩具箱目标区
+    mk('rect', { x: 270, y: 120, width: 470, height: 340, rx: 28, fill: '#fffbeb', stroke: '#f59e0b', 'stroke-width': 4, 'stroke-dasharray': '10 8' }, board);
+    T(board, '大玩具箱 · Big (B)', { x: 505, y: 162, size: 26, fill: '#b45309', weight: 800, anchor: 'middle' });
+    mk('path', { d: 'M36 520 H764', stroke: '#fde68a', 'stroke-width': 3, 'stroke-dasharray': '10 8' }, board);
+
+    const tray = G(p, { x: 0, y: 0, o: 0 });
+    S.bsTray = tray;
+    const preview = [
+      ['big_ball',     180, 710, '大皮球 Big',    '#ff5a5f'],
+      ['small_cherry', 380, 710, '小樱桃 Small',  '#e11d48'],
+      ['big_gift',     580, 710, '大礼盒 Big',    '#0284c7'],
+      ['small_block',  780, 710, '小积木 Small',  '#65a30d'],
+    ];
+    preview.forEach(([kind, px, py, lbl, col]) => {
+      const g = G(tray, { x: px, y: py });
+      mk('rect', { x: -78, y: -58, width: 156, height: 124, rx: 22, fill: '#ffffff', stroke: col, 'stroke-width': 3 }, g);
+      u3_drawSizeToy(g, kind);
+      T(g, lbl, { x: 0, y: 86, size: 20, fill: col, weight: 700, anchor: 'middle' });
+    });
+    show(tray, m('bs_go'), 0.35);
+
+    clockRun(t => {
+      Doudou.animateIdle(exp, t, { armL: 22, armR: -18 });
+    }, D, { tail: true });
+    void board;
+  }, {
+    lead: false,
+    hold: 1.5,
+    ask: done => quiz({ x: 915, y: 175, w: 605, cls: 'side' }, [{
+      id: 'u3-q-big',
+      prompt: ['哪个大（Big - B）？哪个小（Small - S）？找出两个大物品！'],
+      build: (body, api) => {
+        if (S.bsTray) S.bsTray.style.display = 'none';
+        const L = qlayer();
+        const progEl = h('div', 'sc-progress', '已装入 0 / 2 个大玩具 · 拖进大箱子或轻点物品');
+        body.append(progEl);
+
+        const stage = $('stage');
+        const pt = e => {
+          const r = stage.getBoundingClientRect();
+          return [(e.clientX - r.left) * SW / r.width, (e.clientY - r.top) * SH / r.height];
+        };
+
+        const SLOTS = {
+          left:  { x: 475, y: 380, filled: false },
+          right: { x: 695, y: 380, filled: false },
+        };
+
+        const defs = [
+          { id: 'big_ball',     label: '大皮球 Big',    col: '#ff5a5f', home: [180, 710], slot: 'left',  isBig: true,  hint: '' },
+          { id: 'small_cherry', label: '小樱桃 Small',  col: '#e11d48', home: [380, 710], slot: null,    isBig: false, hint: '小樱桃小小的，是小 Small（S）哦！找找大大的玩具吧。' },
+          { id: 'big_gift',     label: '大礼盒 Big',    col: '#0284c7', home: [580, 710], slot: 'right', isBig: true,  hint: '' },
+          { id: 'small_block',  label: '小积木 Small',  col: '#65a30d', home: [780, 710], slot: null,    isBig: false, hint: '绿色小积木小小的，是 Small（S）！找找大的 Big（B）吧。' },
+        ];
+
+        let locked = false, count = 0;
+        const nodes = [];
+
+        const finishBig = () => {
+          progEl.textContent = '已装入 2 / 2 个大玩具 · 大和小分清啦！';
+          u3_playSfx('applause', 0.55);
+          if (S.bsDoudou) S.bsDoudou.setExpr('amazed');
+          api.grade(true, '太棒了！大皮球和大礼盒是大的（Big - B），小樱桃和小积木是小的（Small - S）！');
+        };
+
+        const snapBig = item => {
+          if (item.placed) return;
+          item.placed = true;
+          const sl = SLOTS[item.slot];
+          sl.filled = true;
+          count++;
+          fx(item.g, { x: sl.x, y: sl.y, s: 1.05 }, 0, 0.3, back);
+          u3_playSfx('chime', 0.6);
+          if (count === 2) finishBig();
+          else progEl.textContent = '已装入 1 / 2 个大玩具 · 再找出另一个大玩具！';
+        };
+
+        const tryPlace = (item, x, y, tapMode = false) => {
+          if (locked || item.placed) return;
+          const inBox = tapMode || (x >= 320 && x <= 840 && y >= 200 && y <= 580);
+          if (!inBox) {
+            fx(item.g, { x: item.home[0], y: item.home[1] }, 0, 0.25, out);
+            return;
+          }
+          if (!item.isBig) {
+            u3_playSfx('boing', 0.55);
+            fx(item.g, { x: item.home[0], y: item.home[1] }, 0, 0.28, out);
+            shakeFx(item.g);
+            api.grade(false, item.hint);
+            return;
+          }
+          snapBig(item);
+        };
+
+        defs.forEach(def => {
+          const g = G(L, { x: def.home[0], y: def.home[1] });
+          g.classList.add('sc-drag');
+          g.setAttribute('tabindex', '0');
+          g.setAttribute('role', 'button');
+          g.setAttribute('aria-label', def.label);
+          mk('rect', { x: -78, y: -58, width: 156, height: 124, rx: 22, fill: '#ffffff', stroke: def.col, 'stroke-width': 3 }, g);
+          u3_drawSizeToy(g, def.id);
+          T(g, def.label, { x: 0, y: 86, size: 20, fill: def.col, weight: 700, anchor: 'middle' });
+          const item = { ...def, g, placed: false };
+          nodes.push(item);
+
+          let drag = null;
+          g.addEventListener('pointerdown', e => {
+            if (locked || item.placed) return;
+            e.preventDefault();
+            const p0 = pt(e);
+            drag = { dx: p0[0] - st(g).x, dy: p0[1] - st(g).y, sx: p0[0], sy: p0[1], moved: false };
+            L.append(g);
+            g.setPointerCapture(e.pointerId);
+          });
+          g.addEventListener('pointermove', e => {
+            if (!drag) return;
+            const p0 = pt(e);
+            if (Math.hypot(p0[0] - drag.sx, p0[1] - drag.sy) > 8) drag.moved = true;
+            if (drag.moved) put(g, { x: p0[0] - drag.dx, y: p0[1] - drag.dy });
+          });
+          const endDrag = () => {
+            if (!drag) return;
+            const moved = drag.moved;
+            drag = null;
+            tryPlace(item, st(g).x, st(g).y, !moved);
+          };
+          g.addEventListener('pointerup', endDrag);
+          g.addEventListener('lostpointercapture', endDrag);
+          keyAct(g, () => tryPlace(item, def.home[0], def.home[1], true));
+        });
+
+        return {
+          hint: [kbd('1–4'), ' 选大物品 · 或拖进大玩具箱'],
+          reveal() {
+            nodes.filter(n => n.isBig && !n.placed).forEach(snapBig);
+            return '大皮球和大礼盒是 Big（B），小樱桃和小积木是 Small（S）！';
+          },
+          lock() { locked = true; nodes.forEach(n => { n.g.style.cursor = 'default'; }); },
+          key(e) {
+            const idx = +e.key - 1;
+            if (idx >= 0 && idx < nodes.length) {
+              const it = nodes[idx];
+              tryPlace(it, it.home[0], it.home[1], true);
+              return true;
+            }
+            return false;
+          },
+        };
+      },
+    }], done, '大和小分类'),
+  }],
+
+  /* 3. 长和短 Long and short（铅笔比较 + 回形针量绳子） */
+  ['u3_long_short', '长和短 Long and short', (m) => {
+    const p = panel(0);
+    u3_bg(p, 'bg_u3_playground.jpg', 0.2);
+    u3_badge(p, '长和短 Long and short', 84, 60, '#2d7dd2', 0.1);
+
+    // 上方卡：长铅笔 vs 短铅笔
+    const topCard = u3_card(p, 80, 114, 795, 290, { fill: 'rgba(255,253,247,0.95)', stroke: '#93c5fd', sw: 4 });
+    T(topCard, '比一比铅笔的长和短 · Compare long & short', { x: 398, y: 44, size: 25, fill: '#1d4ed8', weight: 800, anchor: 'middle' });
+
+    const gLong = G(topCard, { x: 100, y: 120, o: 0 });
+    mk('rect', { x: 0, y: -14, width: 420, height: 28, rx: 6, fill: '#ffd166', stroke: '#2b241d', 'stroke-width': 2.8 }, gLong);
+    mk('polygon', { points: '420,-14 456,0 420,14', fill: '#fde68a', stroke: '#2b241d', 'stroke-width': 2.8, 'stroke-linejoin': 'round' }, gLong);
+    mk('polygon', { points: '442,-5 456,0 442,5', fill: '#2b241d' }, gLong);
+    mk('rect', { x: -24, y: -14, width: 28, height: 28, rx: 5, fill: '#ff7aa2', stroke: '#2b241d', 'stroke-width': 2.8 }, gLong);
+    T(gLong, '长 long', { x: 525, y: 10, size: 28, fill: '#ff5a5f', weight: 800 });
+    tw(gLong, { o: 1 }, m('ls_cmp'), 0.35);
+
+    const gShort = G(topCard, { x: 100, y: 215, o: 0 });
+    mk('rect', { x: 0, y: -14, width: 170, height: 28, rx: 6, fill: '#6ee7b7', stroke: '#2b241d', 'stroke-width': 2.8 }, gShort);
+    mk('polygon', { points: '170,-14 206,0 170,14', fill: '#fde68a', stroke: '#2b241d', 'stroke-width': 2.8, 'stroke-linejoin': 'round' }, gShort);
+    mk('polygon', { points: '192,-5 206,0 192,5', fill: '#2b241d' }, gShort);
+    mk('rect', { x: -24, y: -14, width: 28, height: 28, rx: 5, fill: '#ff7aa2', stroke: '#2b241d', 'stroke-width': 2.8 }, gShort);
+    T(gShort, '短 short', { x: 275, y: 10, size: 28, fill: '#059669', weight: 800 });
+    tw(gShort, { o: 1 }, m('ls_cmp', 0.4), 0.35);
+
+    // 下方卡：绳子 + 5 个回形针测量
+    const botCard = u3_card(p, 80, 428, 795, 410, { fill: 'rgba(255,253,247,0.95)', stroke: '#f0dec0', sw: 4 });
+    T(botCard, '这根绳子有多长？用回形针量一量！', { x: 398, y: 48, size: 26, fill: '#2b241d', weight: 800, anchor: 'middle' });
+
+    const ropeG = G(botCard, { x: 400, y: 135, o: 0 });
+    mk('line', { x1: -265, y1: -36, x2: -265, y2: 100, stroke: '#94a3b8', 'stroke-width': 2.5, 'stroke-dasharray': '5 5' }, ropeG);
+    mk('line', { x1: 265, y1: -36, x2: 265, y2: 100, stroke: '#94a3b8', 'stroke-width': 2.5, 'stroke-dasharray': '5 5' }, ropeG);
+    mk('path', { d: 'M-265,0 Q-180,-10 -90,0 Q0,10 90,0 Q180,-10 265,0', fill: 'none', stroke: '#d97706', 'stroke-width': 16, 'stroke-linecap': 'round' }, ropeG);
+    tw(ropeG, { o: 1 }, m('ls_clip'), 0.35);
+
+    S.clipIcons = [];
+    for (let i = 0; i < 5; i++) {
+      const cg = u3_drawClip(botCard, 188 + i * 106, 218, '#38bdf8');
+      put(cg, { o: 0, s: 0.7 });
+      tw(cg, { o: 1, s: 1 }, m('ls_clip', 0.3 + i * 0.2), 0.3, back);
+      S.clipIcons.push(cg);
+    }
+
+    T(botCard, '这根绳子有', { x: 145, y: 332, size: 28, fill: '#2b241d', weight: 700 });
+    const ansBox = mk('rect', { x: 325, y: 286, width: 78, height: 64, rx: 16, fill: '#eef6ff', stroke: '#2d7dd2', 'stroke-width': 3.5, 'stroke-dasharray': '7 5' }, botCard);
+    const qMk = T(botCard, '?', { x: 364, y: 332, size: 36, fill: '#2d7dd2', weight: 800, anchor: 'middle' });
+    const ansNum = T(botCard, '5', { x: 364, y: 334, size: 42, fill: '#ffffff', weight: 800, anchor: 'middle', o: 0 });
+    T(botCard, '个回形针长。', { x: 422, y: 332, size: 28, fill: '#2b241d', weight: 700 });
+    S.ropeAns = { ansBox, qMk, ansNum };
+  }, {
+    lead: false,
+    hold: 1.5,
+    ask: done => quiz({ x: 915, y: 175, w: 605, cls: 'side' }, [
+      {
+        id: 'u3-q-clips',
+        prompt: ['数一数，这根绳子有几个回形针（paper clips）那么长？'],
+        build: choice(
+          [
+            [u3_swatch('#f59e0b', '3'), '3 个回形针'],
+            [u3_swatch('#2d7dd2', '5'), '5 个回形针'],
+            [u3_swatch('#ff5a5f', '7'), '7 个回形针'],
+          ],
+          1,
+          '数得真准！1、2、3、4、5，这根绳子有 5 个回形针那么长！',
+          ['再从左到右点着数一遍，不止 3 个哦！', null, '没有 7 个这么多，再来数一数吧！'],
+          () => {
+            if (S.ropeAns) {
+              S.ropeAns.ansBox.setAttribute('fill', '#2d7dd2');
+              S.ropeAns.ansBox.removeAttribute('stroke-dasharray');
+              fx(S.ropeAns.qMk, { o: 0 }, 0, 0.2);
+              fx(S.ropeAns.ansNum, { o: 1 }, 0.05, 0.28, back);
+            }
+            u3_playSfx('chime', 0.6);
+          }
+        ),
+      },
+      {
+        id: 'u3-q-pencil',
+        prompt: ['上面哪一支铅笔是【长 long】的？'],
+        build: choice(
+          [
+            [u3_swatch('#ffd166'), '黄色铅笔 · long'],
+            [u3_swatch('#6ee7b7'), '绿色铅笔 · short'],
+          ],
+          0,
+          '答对了！黄色铅笔长长的（long），绿色铅笔短短的（short）！',
+          [null, '绿色铅笔比较短，是 short 哦！']
+        ),
+      },
+    ], done, '长和短测量'),
+  }],
+
+  /* 4. 高和矮 Tall and short（动物对比 + 圈出高椅子） */
+  ['u3_tall_short', '高和矮 Tall and short', (m) => {
+    const p = panel(0);
+    u3_bg(p, 'bg_u3_playground.jpg', 0.2);
+    u3_badge(p, '高和矮 Tall and short', 84, 60, '#f77f00', 0.1);
+
+    const card = u3_card(p, 80, 114, 795, 724, { fill: 'rgba(255,253,247,0.95)', stroke: '#f0dec0', sw: 4 });
+    T(card, '比一比谁高（tall）、谁矮（short）！', { x: 398, y: 48, size: 27, fill: '#2b241d', weight: 800, anchor: 'middle' });
+    mk('path', { d: 'M40 430 H755', stroke: '#ead9bc', 'stroke-width': 3, 'stroke-dasharray': '10 8' }, card);
+
+    // 上区：高长颈鹿 vs 矮小兔
+    const gir = G(card, { x: 230, y: 310, o: 0 });
+    mk('rect', { x: -16, y: -140, width: 32, height: 150, rx: 10, fill: '#ffd166', stroke: '#2b241d', 'stroke-width': 2.8 }, gir);
+    mk('ellipse', { cx: 0, cy: 20, rx: 42, ry: 28, fill: '#ffd166', stroke: '#2b241d', 'stroke-width': 2.8 }, gir);
+    mk('rect', { x: -24, y: 36, width: 14, height: 48, rx: 6, fill: '#ffd166', stroke: '#2b241d', 'stroke-width': 2.6 }, gir);
+    mk('rect', { x: 10, y: 36, width: 14, height: 48, rx: 6, fill: '#ffd166', stroke: '#2b241d', 'stroke-width': 2.6 }, gir);
+    mk('ellipse', { cx: 10, cy: -152, rx: 28, ry: 20, fill: '#ffd166', stroke: '#2b241d', 'stroke-width': 2.8 }, gir);
+    mk('circle', { cx: 18, cy: -156, r: 4, fill: '#2b241d' }, gir);
+    mk('circle', { cx: -2, cy: -80, r: 9, fill: '#d97706' }, gir);
+    mk('circle', { cx: 4, cy: -40, r: 8, fill: '#d97706' }, gir);
+    T(gir, '长颈鹿 · 高 tall', { x: 0, y: 112, size: 22, fill: '#b45309', weight: 800, anchor: 'middle' });
+    tw(gir, { o: 1 }, m('ts_go'), 0.35);
+
+    const bun = G(card, { x: 565, y: 325, o: 0 });
+    mk('ellipse', { cx: -10, cy: -22, rx: 8, ry: 24, fill: '#ffffff', stroke: '#2b241d', 'stroke-width': 2.6 }, bun);
+    mk('ellipse', { cx: 10, cy: -22, rx: 8, ry: 24, fill: '#ffffff', stroke: '#2b241d', 'stroke-width': 2.6 }, bun);
+    mk('circle', { cx: 0, cy: 14, r: 24, fill: '#ffffff', stroke: '#2b241d', 'stroke-width': 2.8 }, bun);
+    mk('circle', { cx: -8, cy: 10, r: 3.5, fill: '#2b241d' }, bun);
+    mk('circle', { cx: 8, cy: 10, r: 3.5, fill: '#2b241d' }, bun);
+    mk('ellipse', { cx: 0, cy: 48, rx: 24, ry: 22, fill: '#ffffff', stroke: '#2b241d', 'stroke-width': 2.8 }, bun);
+    T(bun, '小兔子 · 矮 short', { x: 0, y: 97, size: 22, fill: '#db2777', weight: 800, anchor: 'middle' });
+    tw(bun, { o: 1 }, m('ts_go', 0.25), 0.35);
+
+    // 下区：高椅子 vs 矮椅子
+    const chTall = G(card, { x: 230, y: 580 });
+    mk('rect', { x: -44, y: -115, width: 16, height: 185, rx: 6, fill: '#38bdf8', stroke: '#2b241d', 'stroke-width': 2.8 }, chTall);
+    mk('rect', { x: 28, y: -115, width: 16, height: 185, rx: 6, fill: '#38bdf8', stroke: '#2b241d', 'stroke-width': 2.8 }, chTall);
+    mk('rect', { x: -44, y: -115, width: 88, height: 34, rx: 8, fill: '#0284c7', stroke: '#2b241d', 'stroke-width': 2.8 }, chTall);
+    mk('rect', { x: -50, y: -12, width: 100, height: 18, rx: 6, fill: '#0284c7', stroke: '#2b241d', 'stroke-width': 2.8 }, chTall);
+    T(chTall, '蓝色椅子', { x: 0, y: 105, size: 22, fill: '#0284c7', weight: 800, anchor: 'middle' });
+
+    const chShort = G(card, { x: 565, y: 580 });
+    mk('rect', { x: -42, y: 20, width: 16, height: 50, rx: 6, fill: '#f59e0b', stroke: '#2b241d', 'stroke-width': 2.8 }, chShort);
+    mk('rect', { x: 26, y: 20, width: 16, height: 50, rx: 6, fill: '#f59e0b', stroke: '#2b241d', 'stroke-width': 2.8 }, chShort);
+    mk('rect', { x: -48, y: 10, width: 96, height: 18, rx: 6, fill: '#d97706', stroke: '#2b241d', 'stroke-width': 2.8 }, chShort);
+    T(chShort, '黄色椅子', { x: 0, y: 105, size: 22, fill: '#b45309', weight: 800, anchor: 'middle' });
+
+    const ring = mk('circle', { cx: 230, cy: 565, r: 112, fill: 'none', stroke: '#2bb673', 'stroke-width': 8 }, card);
+    put(ring, { o: 0 });
+    S.tallRing = ring;
+  }, {
+    lead: false,
+    hold: 1.5,
+    ask: done => quiz({ x: 915, y: 175, w: 605, cls: 'side' }, [
+      {
+        id: 'u3-q-chair',
+        prompt: ['下面哪一把椅子是【高 tall】的？'],
+        build: choice(
+          [
+            [u3_swatch('#0284c7'), '蓝色椅子 · tall'],
+            [u3_swatch('#f59e0b'), '黄色椅子 · short'],
+          ],
+          0,
+          '答对了！蓝色椅子高高的（tall），黄色椅子矮矮的（short）！',
+          [null, '黄色椅子比较矮，是 short 哦！'],
+          () => {
+            if (S.tallRing) fx(S.tallRing, { o: 1 }, 0, 0.35, back);
+            u3_playSfx('chime', 0.6);
+          }
+        ),
+      },
+      {
+        id: 'u3-q-animal',
+        prompt: ['长颈鹿和小兔子比，哪一个小动物是【矮 short】的？'],
+        build: choice(
+          [
+            [u3_swatch('#ffd166'), '长颈鹿 · tall'],
+            [u3_swatch('#ff7aa2'), '小兔子 · short'],
+          ],
+          1,
+          '真棒！小兔子矮矮的（short），长颈鹿高高的（tall）！',
+          ['长颈鹿脖子长长高高的，是 tall 哦！', null]
+        ),
+      },
+    ], done, '高和矮挑战'),
+  }],
+
+  /* 5. 复习游戏：听音找一找（findWords） */
+  ['u3_revise', '复习游戏 · 听音找一找', (m) => {
+    const p = panel(0);
+    u3_bg(p, 'bg_u3_playground.jpg', 0.14);
+    u3_badge(p, '复习游戏 · 听音找一找', 84, 60, '#2bb673', 0.1);
+    const bar = u3_card(p, 470, 32, 1020, 58, { fill: 'rgba(255,255,255,0.94)', stroke: '#2bb673', sw: 3, rx: 29 });
+    T(bar, '听听小豆豆的话，点一点正确的大小、长短、高矮朋友！', { x: 510, y: 38, size: 25, fill: '#2b241d', weight: 700, anchor: 'middle' });
+
+    const specs = [
+      { id: 'long_rope',   x: 310,  y: 280, lbl: '长绳子 long',    col: '#ff5a5f', side: 'below' },
+      { id: 'short_rope',  x: 800,  y: 280, lbl: '短绳子 short',   col: '#f77f00', side: 'below' },
+      { id: 'tall_tree',   x: 1290, y: 280, lbl: '高大树 tall',    col: '#2bb673', side: 'below' },
+      { id: 'short_bush',  x: 310,  y: 635, lbl: '矮灌木 short',   col: '#059669', side: 'above' },
+      { id: 'big_melon',   x: 800,  y: 635, lbl: '大西瓜 big',     col: '#16a34a', side: 'above' },
+      { id: 'small_berry', x: 1290, y: 635, lbl: '小草莓 small',   col: '#e11d48', side: 'above' },
+    ];
+
+    const map = {};
+    specs.forEach(sp => {
+      const g = G(p, { x: sp.x, y: sp.y });
+      mk('rect', { x: -165, y: -125, width: 330, height: 245, rx: 28, fill: 'rgba(255,255,255,0.95)', stroke: sp.col, 'stroke-width': 4 }, g);
+      const art = G(g, { x: 0, y: -18 });
+      u3_drawReviseItem(art, sp.id);
+      T(g, sp.lbl, { x: 0, y: 92, size: 25, fill: sp.col, weight: 800, anchor: 'middle' });
+      map[sp.id] = g;
+    });
+
+    u3ReviseThings = [
+      { g: map.long_rope,   word: '长绳子', clip: 'w-long',        side: 'below' },
+      { g: map.short_rope,  word: '短绳子', clip: 'w-short-rope',  side: 'below' },
+      { g: map.tall_tree,   word: '高大树', clip: 'w-tall-tree',   side: 'below' },
+      { g: map.short_bush,  word: '矮灌木', clip: 'w-short-bush',  side: 'above' },
+      { g: map.big_melon,   word: '大西瓜', clip: 'w-big-melon',   side: 'above' },
+      { g: map.small_berry, word: '小草莓', clip: 'w-small-berry', side: 'above' },
+    ];
+    void m;
+  }, {
+    lead: false,
+    ask: done => findWords(u3ReviseThings, U3_REVISE_ASKS, done, { end: 'q-u3-done', there: 'q-there', minBox: 120 }),
+    video: false,
+  }],
+
+  /* 6. 总结结尾 */
+  ['u3_outro', '通关成功 · 比较小能手！', (m, D) => {
+    const p = panel(0);
+    u3_bg(p, 'bg_u3_playground.jpg', 0.18);
+    sfx('u3_outro', 0.15, 'applause', 0.45);
+    sfx('u3_outro', 0.25, 'chime', 0.5);
+
+    u3_badge(p, '单元 3 通关 · 比较小能手！', 84, 62, '#2bb673', 0.1);
+    const expWrap = G(p, { x: 330, y: 515 });
+    const exp = Doudou.create(expWrap, { x: 0, y: 0, s: 1.54, hat: true, scarf: true, prop: 'badge', propSide: 'R', eyeColor: 'brown', expr: 'happy', armL: 24, armR: -78 });
+
+    const wins = [
+      ['o1', '分清大（Big - B）和小（Small - S）', '#ff5a5f', 0, 'dot'],
+      ['o2', '用回形针量出长（Long）与短（Short）', '#2d7dd2', 1, 'star'],
+      ['o3', '比出高（Tall）与矮（Short）的物体', '#f77f00', 2, 'sq'],
+    ];
+    wins.forEach(([mkName, txt, col, idx, icon]) => {
+      const card = G(p, { x: 640, y: 245 + idx * 175, o: 0, s: 0.88 });
+      mk('rect', { x: 0, y: -48, width: 820, height: 112, rx: 28, fill: 'rgba(255,255,255,0.95)', stroke: col, 'stroke-width': 4 }, card);
+      if (icon === 'dot') mk('circle', { cx: 48, cy: 8, r: 16, fill: col }, card);
+      else if (icon === 'star') mk('polygon', { points: '48,-10 54,2 66,2 56,10 60,22 48,15 36,22 40,10 30,2 42,2', fill: col }, card);
+      else mk('rect', { x: 34, y: -6, width: 28, height: 28, rx: 5, fill: col }, card);
+      T(card, txt, { x: 86, y: 18, size: 32, fill: '#2b241d', weight: 700 });
+      tw(card, { o: 1, s: 1 }, m(mkName), 0.35, back);
+    });
+
+    clockRun(t => {
+      put(expWrap, { y: 515 - Math.abs(12 * Math.sin(t * 4)) });
+      Doudou.animateIdle(exp, t, { armL: 24, armR: -78 + 14 * Math.sin(t * 6.5) });
+    }, D, { tail: true });
+  }, { lead: false }],
+].map(([id, title, run, extra]) => ({ id, title, run, ...extra }));
+
+window.MUSIC_LEVELS = { under: -16, open: -8 };
+music('audio/bgm/friends.mp3', ['u3_intro', 'u3_big_small', 'u3_long_short', 'u3_tall_short', 'u3_revise', 'u3_outro'], 0.34);
+
+boot();
+</script>
+</body>
+</html>

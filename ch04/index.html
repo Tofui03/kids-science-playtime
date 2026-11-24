@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>我可爱的家 My Lovely House · 趣味科学小课堂</title>
+<link rel="stylesheet" href="../lib/engine.css">
+<link rel="expect" href="#bar" blocking="render">
+</head>
+<body>
+<script src="../lib/engine.js"></script>
+<script src="../lib/doudou.js"></script>
+<script src="audio/zh/timings.js"></script>
+<script>
+'use strict';
+const CHAPTER = { number: 4, title: '我可爱的家 My Lovely House', minutes: 4, language: 'zh', film: true, questionKeys: false };
+try { if (localStorage.getItem('captions') === null) setCaptions(true, false); } catch {}
+
+/* ---------- Unit 4 绘本舞台助手（u4_ 前缀） ---------- */
+function u4_bg(p, imgName, veil = 0.2) {
+  mk('image', { href: `../img/${imgName}`, x: 0, y: 0, width: 1600, height: 900, preserveAspectRatio: 'xMidYMid slice' }, p);
+  if (veil > 0) mk('rect', { x: 0, y: 0, width: 1600, height: 900, fill: `rgba(255,253,247,${veil})` }, p);
+}
+
+function u4_badge(p, label, x = 80, y = 60, fill = '#f77f00', t0 = 0.1) {
+  const g = G(p, { x, y, o: 0 });
+  const w = Math.max(160, label.length * 25 + 54);
+  mk('rect', { x: 4, y: -24, width: w, height: 52, rx: 26, fill: 'rgba(60,40,10,0.14)' }, g);
+  mk('rect', { x: 0, y: -28, width: w, height: 52, rx: 26, fill }, g);
+  T(g, label, { x: w / 2, y: 7, size: 24, fill: '#ffffff', weight: 700, anchor: 'middle' });
+  tw(g, { o: 1 }, t0, 0.3);
+  return g;
+}
+
+function u4_card(p, x, y, w, h, { fill = 'rgba(255,253,247,0.93)', stroke = '#f0dec0', sw = 4, rx = 28 } = {}) {
+  const g = G(p, { x, y });
+  mk('rect', { x: 6, y: 10, width: w, height: h, rx, fill: 'rgba(80,50,20,0.1)' }, g);
+  mk('rect', { x: 0, y: 0, width: w, height: h, rx, fill, stroke, 'stroke-width': sw }, g);
+  return g;
+}
+
+const U4_SFX_CACHE = {};
+function u4_playSfx(name, vol = 0.6) {
+  try {
+    const a = U4_SFX_CACHE[name] || (U4_SFX_CACHE[name] = new Audio(`audio/sfx/${name}.mp3`));
+    a.currentTime = 0;
+    a.volume = vol * +($('volume')?.value ?? 1);
+    a.play().catch(() => {});
+  } catch {}
+}
+
+function u4_swatch(hex) {
+  const sp = h('span', 'sc-swatch');
+  sp.style.background = hex;
+  return sp;
+}
+
+/* 物品纯 SVG 图标 */
+function u4_drawProp(par, kind) {
+  if (kind === 'sponge') {
+    mk('rect', { x: -34, y: -24, width: 68, height: 48, rx: 14, fill: '#ffd166', stroke: '#2b241d', 'stroke-width': 3 }, par);
+    [[-16,-8],[6,-10],[18,4],[-8,10]].forEach(([hx, hy]) => mk('circle', { cx: hx, cy: hy, r: 4.5, fill: '#f59e0b' }, par));
+  } else if (kind === 'rock') {
+    mk('path', { d: 'M-36,16 L-28,-16 L0,-28 L30,-14 L38,18 L12,26 L-22,24 Z', fill: '#94a3b8', stroke: '#2b241d', 'stroke-width': 3, 'stroke-linejoin': 'round' }, par);
+    mk('path', { d: 'M-14,-14 L6,-10 L14,4', fill: 'none', stroke: '#cbd5e1', 'stroke-width': 3, 'stroke-linecap': 'round' }, par);
+  } else if (kind === 'cotton') {
+    mk('circle', { cx: -16, cy: 4, r: 20, fill: '#ffffff', stroke: '#64748b', 'stroke-width': 2.6 }, par);
+    mk('circle', { cx: 16, cy: 4, r: 20, fill: '#ffffff', stroke: '#64748b', 'stroke-width': 2.6 }, par);
+    mk('circle', { cx: 0, cy: -10, r: 22, fill: '#ffffff', stroke: '#64748b', 'stroke-width': 2.6 }, par);
+    mk('circle', { cx: 0, cy: 4, r: 16, fill: '#ffffff' }, par);
+  } else if (kind === 'wood') {
+    mk('polygon', { points: '-30,-14 0,-28 30,-14 0,0', fill: '#f4a261', stroke: '#2b241d', 'stroke-width': 2.8, 'stroke-linejoin': 'round' }, par);
+    mk('polygon', { points: '-30,-14 0,0 0,28 -30,14', fill: '#e76f51', stroke: '#2b241d', 'stroke-width': 2.8, 'stroke-linejoin': 'round' }, par);
+    mk('polygon', { points: '0,0 30,-14 30,14 0,28', fill: '#d97706', stroke: '#2b241d', 'stroke-width': 2.8, 'stroke-linejoin': 'round' }, par);
+  } else if (kind === 'marble') {
+    mk('circle', { cx: 0, cy: 0, r: 30, fill: '#38bdf8', stroke: '#2b241d', 'stroke-width': 3 }, par);
+    mk('path', { d: 'M-14,-12 Q0,8 14,-10', fill: 'none', stroke: '#ffffff', 'stroke-width': 5, 'stroke-linecap': 'round' }, par);
+    mk('circle', { cx: -12, cy: -14, r: 5, fill: '#ffffff' }, par);
+  } else if (kind === 'pineapple') {
+    mk('path', { d: 'M-14,-24 L0,-44 L14,-24 Z M-22,-20 L-8,-38 L0,-24 Z M22,-20 L8,-38 L0,-24 Z', fill: '#40916c', stroke: '#2b241d', 'stroke-width': 2.2, 'stroke-linejoin': 'round' }, par);
+    mk('ellipse', { cx: 0, cy: 6, rx: 24, ry: 28, fill: '#f59e0b', stroke: '#2b241d', 'stroke-width': 3 }, par);
+    mk('path', { d: 'M-16,-6 L16,18 M16,-6 L-16,18', stroke: '#b45309', 'stroke-width': 2.4 }, par);
+  } else if (kind === 'cup') {
+    mk('path', { d: 'M-22,-20 H22 L16,26 C14,32 -14,32 -16,26 Z', fill: '#ffcad4', stroke: '#2b241d', 'stroke-width': 3, 'stroke-linejoin': 'round' }, par);
+    mk('path', { d: 'M20,-10 C34,-10 34,14 18,14', fill: 'none', stroke: '#2b241d', 'stroke-width': 4, 'stroke-linecap': 'round' }, par);
+    mk('path', { d: 'M-12,-10 V14', stroke: '#ffffff', 'stroke-width': 4, 'stroke-linecap': 'round', opacity: 0.7 }, par);
+  } else if (kind === 'bark') {
+    mk('rect', { x: -24, y: -32, width: 48, height: 64, rx: 8, fill: '#8d5524', stroke: '#2b241d', 'stroke-width': 3 }, par);
+    mk('path', { d: 'M-12,-22 L-6,-4 L-12,18 M6,-20 L12,4 L6,24', fill: 'none', stroke: '#4a2918', 'stroke-width': 3.5, 'stroke-linecap': 'round' }, par);
+  } else if (kind === 'brick') {
+    mk('rect', { x: -34, y: -20, width: 68, height: 40, rx: 6, fill: '#dc2626', stroke: '#2b241d', 'stroke-width': 3 }, par);
+    mk('circle', { cx: -14, cy: -4, r: 3.5, fill: '#991b1b' }, par);
+    mk('circle', { cx: 12, cy: 6, r: 3.5, fill: '#991b1b' }, par);
+  } else if (kind === 'feather') {
+    mk('path', { d: 'M-26,22 C-16,-12 10,-28 30,-22 C24,-2 8,16 -22,22', fill: '#f8fafc', stroke: '#64748b', 'stroke-width': 2.6, 'stroke-linejoin': 'round' }, par);
+    mk('path', { d: 'M-30,26 L22,-18', stroke: '#94a3b8', 'stroke-width': 2.5, 'stroke-linecap': 'round' }, par);
+  } else if (kind === 'bowling') {
+    mk('circle', { cx: 0, cy: 0, r: 30, fill: '#334155', stroke: '#2b241d', 'stroke-width': 3 }, par);
+    mk('circle', { cx: -8, cy: -10, r: 3.5, fill: '#ffffff' }, par);
+    mk('circle', { cx: 4, cy: -14, r: 3.5, fill: '#ffffff' }, par);
+    mk('circle', { cx: -2, cy: 0, r: 3.5, fill: '#ffffff' }, par);
+  } else if (kind === 'melon') {
+    mk('ellipse', { cx: 0, cy: 0, rx: 32, ry: 26, fill: '#2bb673', stroke: '#2b241d', 'stroke-width': 2.8 }, par);
+    mk('path', { d: 'M-12,-24 Q-4,0 -12,24 M12,-24 Q18,0 12,24', fill: 'none', stroke: '#1b4332', 'stroke-width': 3.5 }, par);
+  } else if (kind === 'balloon') {
+    mk('ellipse', { cx: 0, cy: -8, rx: 22, ry: 26, fill: '#ff7aa2', stroke: '#2b241d', 'stroke-width': 2.8 }, par);
+    mk('path', { d: 'M0,18 Q-4,32 4,40', fill: 'none', stroke: '#5a3b2c', 'stroke-width': 2.2 }, par);
+  }
+}
+
+const BEATS = [
+  /* 1. 开场 */
+  ['u4_intro', '单元 4 · 我可爱的家 My Lovely House', (m, D) => {
+    const p = panel(0);
+    u4_bg(p, 'bg_u4_house.jpg', 0.16);
+    sfx('u4_intro', 0.2, 'bell', 0.55);
+
+    u4_badge(p, '单元 4 · 我可爱的家 My Lovely House', 84, 62, '#f77f00', 0.1);
+    const titleBox = u4_card(p, 585, 130, 880, 240, { fill: 'rgba(255,255,255,0.94)', stroke: '#ffbe0b', sw: 5, rx: 36 });
+    T(titleBox, '我可爱的家 · My Lovely House', { x: 440, y: 105, size: 56, fill: '#f77f00', weight: 700, anchor: 'middle' });
+    T(titleBox, '跟着豆豆摸一摸硬和软、粗和滑，再比一比重和轻！', { x: 440, y: 178, size: 28, fill: '#2d7dd2', weight: 700, anchor: 'middle' });
+    put(titleBox, { o: 0, s: 0.86 }); tw(titleBox, { o: 1, s: 1 }, 0.2, 0.5, back);
+
+    const expWrap = G(p, { x: 350, y: 575, o: 0 });
+    const exp = Doudou.create(expWrap, { x: 0, y: 0, s: 1.58, hat: false, scarf: true, eyeColor: 'brown', expr: 'happy', armL: 26, armR: -120 });
+    tw(expWrap, { o: 1, y: 520 }, 0.2, 0.6, out);
+
+    const cards = [
+      ['m_hs', '硬和软 Hard & soft',     '#ff5a5f', 775,  505],
+      ['m_rs', '粗和滑 Rough & smooth',  '#2d7dd2', 1185, 505],
+      ['m_hl', '重和轻 Heavy & light',   '#2bb673', 980,  645],
+    ];
+    cards.forEach(([mkName, label, col, tx, ty], idx) => {
+      const b = G(p, { x: tx, y: ty, o: 0, s: 0.82 });
+      mk('rect', { x: -195, y: -44, width: 390, height: 88, rx: 28, fill: '#ffffff', stroke: col, 'stroke-width': 4 }, b);
+      mk('circle', { cx: -145, cy: 0, r: 16, fill: col }, b);
+      T(b, idx + 1, { x: -145, y: 7, size: 20, fill: '#ffffff', weight: 800, anchor: 'middle' });
+      T(b, label, { x: 14, y: 10, size: 25, fill: col, weight: 700, anchor: 'middle' });
+      const tAt = m(mkName);
+      tw(b, { o: 1, s: 1 }, tAt, 0.36, back);
+      sfx('u4_intro', tAt, 'pop', 0.45);
+    });
+
+    clockRun(t => {
+      Doudou.animateIdle(exp, t, { armL: 26, armR: -120 + 16 * Math.sin(t * 6.5) });
+    }, D, { tail: true });
+  }, { lead: false }],
+
+  /* 2. 硬和软 Hard and soft（4 选 2 拖拉软绵绵物品） */
+  ['u4_hard_soft', '硬和软 Hard and soft', (m, D) => {
+    const p = panel(0);
+    u4_bg(p, 'bg_u4_house.jpg', 0.16);
+    u4_badge(p, '硬和软 Hard and soft', 84, 60, '#ff5a5f', 0.1);
+
+    const board = u4_card(p, 80, 112, 800, 726, { fill: 'rgba(255,253,247,0.95)', stroke: '#fbcfe8', sw: 5, rx: 32 });
+    T(board, '按一按！找出 2 样摸起来【软软的 soft】物品拖入篮子！', { x: 400, y: 46, size: 23, fill: '#2b241d', weight: 700, anchor: 'middle' });
+
+    const expWrap = G(p, { x: 215, y: 390 });
+    const exp = Doudou.create(expWrap, { x: 0, y: 0, s: 1.08, hat: false, scarf: true, eyeColor: 'brown', expr: 'happy', armL: 22, armR: -18 });
+    S.hsDoudou = exp;
+
+    mk('rect', { x: 270, y: 120, width: 470, height: 340, rx: 28, fill: '#fdf2f8', stroke: '#ec4899', 'stroke-width': 4, 'stroke-dasharray': '10 8' }, board);
+    T(board, '软绵绵云朵篮 · Soft', { x: 505, y: 162, size: 26, fill: '#be185d', weight: 800, anchor: 'middle' });
+    mk('path', { d: 'M36 520 H764', stroke: '#fce7f3', 'stroke-width': 3, 'stroke-dasharray': '10 8' }, board);
+
+    const tray = G(p, { x: 0, y: 0, o: 0 });
+    S.hsTray = tray;
+    const preview = [
+      ['sponge', 180, 710, '海绵块 Soft', '#d97706'],
+      ['rock',   380, 710, '大石头 Hard', '#475569'],
+      ['cotton', 580, 710, '棉花球 Soft', '#db2777'],
+      ['wood',   780, 710, '木积木 Hard', '#b45309'],
+    ];
+    preview.forEach(([kind, px, py, lbl, col]) => {
+      const g = G(tray, { x: px, y: py });
+      mk('rect', { x: -78, y: -56, width: 156, height: 120, rx: 22, fill: '#ffffff', stroke: col, 'stroke-width': 3 }, g);
+      u4_drawProp(g, kind);
+      T(g, lbl, { x: 0, y: 84, size: 20, fill: col, weight: 700, anchor: 'middle' });
+    });
+    show(tray, m('hs_go'), 0.35);
+
+    clockRun(t => {
+      Doudou.animateIdle(exp, t, { armL: 22, armR: -18 });
+    }, D, { tail: true });
+    void board;
+  }, {
+    lead: false,
+    hold: 1.5,
+    ask: done => quiz({ x: 915, y: 175, w: 605, cls: 'side' }, [{
+      id: 'u4-q-soft',
+      prompt: ['按压测试：哪两样东西摸起来【软软的 soft】？拖进云朵篮或轻点！'],
+      build: (body, api) => {
+        if (S.hsTray) S.hsTray.style.display = 'none';
+        const L = qlayer();
+        const progEl = h('div', 'sc-progress', '已找到 0 / 2 样软物品 · 拖进云朵篮或轻点物品');
+        body.append(progEl);
+
+        const stage = $('stage');
+        const pt = e => {
+          const r = stage.getBoundingClientRect();
+          return [(e.clientX - r.left) * SW / r.width, (e.clientY - r.top) * SH / r.height];
+        };
+
+        const SLOTS = {
+          left:  { x: 475, y: 380, filled: false },
+          right: { x: 695, y: 380, filled: false },
+        };
+
+        const defs = [
+          { id: 'sponge', label: '海绵块 Soft', col: '#d97706', home: [180, 710], slot: 'left',  soft: true,  hint: '' },
+          { id: 'rock',   label: '大石头 Hard', col: '#475569', home: [380, 710], slot: null,    soft: false, hint: '铛铛！大石头硬邦邦按不扁，是硬的（hard）哦！' },
+          { id: 'cotton', label: '棉花球 Soft', col: '#db2777', home: [580, 710], slot: 'right', soft: true,  hint: '' },
+          { id: 'wood',   label: '木积木 Hard', col: '#b45309', home: [780, 710], slot: null,    soft: false, hint: '木积木敲起来硬邦邦的，是硬的（hard）哦！' },
+        ];
+
+        let locked = false, count = 0;
+        const nodes = [];
+
+        const finishSoft = () => {
+          progEl.textContent = '已找到 2 / 2 样软物品 · 软软的按下去会弹起来！';
+          u4_playSfx('applause', 0.55);
+          if (S.hsDoudou) S.hsDoudou.setExpr('happy');
+          api.grade(true, '太棒了！海绵和棉花按下去软软的（soft），石头和木积木硬邦邦的（hard）！');
+        };
+
+        const snapSoft = item => {
+          if (item.placed) return;
+          item.placed = true;
+          const sl = SLOTS[item.slot];
+          sl.filled = true;
+          count++;
+          fx(item.g, { x: sl.x, y: sl.y, s: 1.05 }, 0, 0.3, back);
+          u4_playSfx('chime', 0.6);
+          if (count === 2) finishSoft();
+          else progEl.textContent = '已找到 1 / 2 样软物品 · 再找出另一样软物品！';
+        };
+
+        const tryPlace = (item, x, y, tapMode = false) => {
+          if (locked || item.placed) return;
+          const inBox = tapMode || (x >= 320 && x <= 840 && y >= 200 && y <= 580);
+          if (!inBox) {
+            fx(item.g, { x: item.home[0], y: item.home[1] }, 0, 0.25, out);
+            return;
+          }
+          if (!item.soft) {
+            u4_playSfx('boing', 0.55);
+            fx(item.g, { x: item.home[0], y: item.home[1] }, 0, 0.28, out);
+            shakeFx(item.g);
+            api.grade(false, item.hint);
+            return;
+          }
+          snapSoft(item);
+        };
+
+        defs.forEach(def => {
+          const g = G(L, { x: def.home[0], y: def.home[1] });
+          g.classList.add('sc-drag');
+          g.setAttribute('tabindex', '0');
+          g.setAttribute('role', 'button');
+          g.setAttribute('aria-label', def.label);
+          mk('rect', { x: -78, y: -56, width: 156, height: 120, rx: 22, fill: '#ffffff', stroke: def.col, 'stroke-width': 3 }, g);
+          u4_drawProp(g, def.id);
+          T(g, def.label, { x: 0, y: 84, size: 20, fill: def.col, weight: 700, anchor: 'middle' });
+          const item = { ...def, g, placed: false };
+          nodes.push(item);
+
+          let drag = null;
+          g.addEventListener('pointerdown', e => {
+            if (locked || item.placed) return;
+            e.preventDefault();
+            const p0 = pt(e);
+            drag = { dx: p0[0] - st(g).x, dy: p0[1] - st(g).y, sx: p0[0], sy: p0[1], moved: false };
+            L.append(g);
+            g.setPointerCapture(e.pointerId);
+          });
+          g.addEventListener('pointermove', e => {
+            if (!drag) return;
+            const p0 = pt(e);
+            if (Math.hypot(p0[0] - drag.sx, p0[1] - drag.sy) > 8) drag.moved = true;
+            if (drag.moved) put(g, { x: p0[0] - drag.dx, y: p0[1] - drag.dy });
+          });
+          const endDrag = () => {
+            if (!drag) return;
+            const moved = drag.moved;
+            drag = null;
+            tryPlace(item, st(g).x, st(g).y, !moved);
+          };
+          g.addEventListener('pointerup', endDrag);
+          g.addEventListener('lostpointercapture', endDrag);
+          keyAct(g, () => tryPlace(item, def.home[0], def.home[1], true));
+        });
+
+        return {
+          hint: [kbd('1–4'), ' 选软物品 · 或拖进云朵篮'],
+          reveal() {
+            nodes.filter(n => n.soft && !n.placed).forEach(snapSoft);
+            return '海绵块和棉花球都是软的（soft），石头和木积木是硬的（hard）！';
+          },
+          lock() { locked = true; nodes.forEach(n => { n.g.style.cursor = 'default'; }); },
+          key(e) {
+            const idx = +e.key - 1;
+            if (idx >= 0 && idx < nodes.length) {
+              const it = nodes[idx];
+              tryPlace(it, it.home[0], it.home[1], true);
+              return true;
+            }
+            return false;
+          },
+        };
+      },
+    }], done, '硬和软挑战'),
+  }],
+
+  /* 3. 粗和滑 Rough and smooth（4 选 2 拖拉光滑物品） */
+  ['u4_rough_smooth', '粗和滑 Rough and smooth', (m, D) => {
+    const p = panel(0);
+    u4_bg(p, 'bg_u4_house.jpg', 0.16);
+    u4_badge(p, '粗和滑 Rough and smooth', 84, 60, '#2d7dd2', 0.1);
+
+    const board = u4_card(p, 80, 112, 800, 726, { fill: 'rgba(255,253,247,0.95)', stroke: '#93c5fd', sw: 5, rx: 32 });
+    T(board, '找出 2 样表面【滑滑的 smooth】物品放进光滑托盘！', { x: 400, y: 46, size: 23, fill: '#2b241d', weight: 700, anchor: 'middle' });
+
+    const expWrap = G(p, { x: 215, y: 390 });
+    const exp = Doudou.create(expWrap, { x: 0, y: 0, s: 1.08, hat: false, scarf: true, eyeColor: 'brown', expr: 'happy', armL: 22, armR: -18 });
+
+    mk('rect', { x: 270, y: 120, width: 470, height: 340, rx: 28, fill: '#eff6ff', stroke: '#3b82f6', 'stroke-width': 4, 'stroke-dasharray': '10 8' }, board);
+    T(board, '滑溜溜托盘 · Smooth', { x: 505, y: 162, size: 26, fill: '#1d4ed8', weight: 800, anchor: 'middle' });
+    mk('path', { d: 'M36 520 H764', stroke: '#dbeafe', 'stroke-width': 3, 'stroke-dasharray': '10 8' }, board);
+
+    const tray = G(p, { x: 0, y: 0, o: 0 });
+    S.rsTray = tray;
+    const preview = [
+      ['marble',    180, 710, '玻璃弹珠', '#0284c7'],
+      ['pineapple', 380, 710, '菠萝外皮', '#d97706'],
+      ['cup',       580, 710, '陶瓷小杯', '#db2777'],
+      ['bark',      780, 710, '粗糙树皮', '#78350f'],
+    ];
+    preview.forEach(([kind, px, py, lbl, col]) => {
+      const g = G(tray, { x: px, y: py });
+      mk('rect', { x: -78, y: -56, width: 156, height: 120, rx: 22, fill: '#ffffff', stroke: col, 'stroke-width': 3 }, g);
+      u4_drawProp(g, kind);
+      T(g, lbl, { x: 0, y: 84, size: 20, fill: col, weight: 700, anchor: 'middle' });
+    });
+    show(tray, m('rs_go'), 0.35);
+
+    clockRun(t => {
+      Doudou.animateIdle(exp, t, { armL: 22, armR: -18 });
+    }, D, { tail: true });
+    void board;
+  }, {
+    lead: false,
+    hold: 1.5,
+    ask: done => quiz({ x: 915, y: 175, w: 605, cls: 'side' }, [{
+      id: 'u4-q-smooth',
+      prompt: ['摸一摸表面，找出两样【滑溜溜 smooth】的物品！'],
+      build: (body, api) => {
+        if (S.rsTray) S.rsTray.style.display = 'none';
+        const L = qlayer();
+        const progEl = h('div', 'sc-progress', '已找到 0 / 2 样光滑物品 · 拖进托盘或轻点物品');
+        body.append(progEl);
+
+        const stage = $('stage');
+        const pt = e => {
+          const r = stage.getBoundingClientRect();
+          return [(e.clientX - r.left) * SW / r.width, (e.clientY - r.top) * SH / r.height];
+        };
+
+        const SLOTS = {
+          left:  { x: 475, y: 380, filled: false },
+          right: { x: 695, y: 380, filled: false },
+        };
+
+        const defs = [
+          { id: 'marble',    label: '玻璃弹珠', col: '#0284c7', home: [180, 710], slot: 'left',  smooth: true,  hint: '' },
+          { id: 'pineapple', label: '菠萝外皮', col: '#d97706', home: [380, 710], slot: null,    smooth: false, hint: '菠萝外皮一格一格扎扎的，表面是粗糙（rough）的哦！' },
+          { id: 'cup',       label: '陶瓷小杯', col: '#db2777', home: [580, 710], slot: 'right', smooth: true,  hint: '' },
+          { id: 'bark',      label: '粗糙树皮', col: '#78350f', home: [780, 710], slot: null,    smooth: false, hint: '树皮凹凸不平，摸起来粗粗的（rough）！找光滑的吧。' },
+        ];
+
+        let locked = false, count = 0;
+        const nodes = [];
+
+        const finishSmooth = () => {
+          progEl.textContent = '已找到 2 / 2 样光滑物品 · 滑溜溜的真舒服！';
+          u4_playSfx('applause', 0.55);
+          api.grade(true, '答对了！玻璃弹珠和陶瓷杯表面滑溜溜的（smooth），菠萝壳和树皮表面粗粗的（rough）！');
+        };
+
+        const snapSmooth = item => {
+          if (item.placed) return;
+          item.placed = true;
+          const sl = SLOTS[item.slot];
+          sl.filled = true;
+          count++;
+          fx(item.g, { x: sl.x, y: sl.y, s: 1.05 }, 0, 0.3, back);
+          u4_playSfx('chime', 0.6);
+          if (count === 2) finishSmooth();
+          else progEl.textContent = '已找到 1 / 2 样光滑物品 · 再找出另一样光滑物品！';
+        };
+
+        const tryPlace = (item, x, y, tapMode = false) => {
+          if (locked || item.placed) return;
+          const inBox = tapMode || (x >= 320 && x <= 840 && y >= 200 && y <= 580);
+          if (!inBox) {
+            fx(item.g, { x: item.home[0], y: item.home[1] }, 0, 0.25, out);
+            return;
+          }
+          if (!item.smooth) {
+            u4_playSfx('boing', 0.55);
+            fx(item.g, { x: item.home[0], y: item.home[1] }, 0, 0.28, out);
+            shakeFx(item.g);
+            api.grade(false, item.hint);
+            return;
+          }
+          snapSmooth(item);
+        };
+
+        defs.forEach(def => {
+          const g = G(L, { x: def.home[0], y: def.home[1] });
+          g.classList.add('sc-drag');
+          g.setAttribute('tabindex', '0');
+          g.setAttribute('role', 'button');
+          g.setAttribute('aria-label', def.label);
+          mk('rect', { x: -78, y: -56, width: 156, height: 120, rx: 22, fill: '#ffffff', stroke: def.col, 'stroke-width': 3 }, g);
+          u4_drawProp(g, def.id);
+          T(g, def.label, { x: 0, y: 84, size: 20, fill: def.col, weight: 700, anchor: 'middle' });
+          const item = { ...def, g, placed: false };
+          nodes.push(item);
+
+          let drag = null;
+          g.addEventListener('pointerdown', e => {
+            if (locked || item.placed) return;
+            e.preventDefault();
+            const p0 = pt(e);
+            drag = { dx: p0[0] - st(g).x, dy: p0[1] - st(g).y, sx: p0[0], sy: p0[1], moved: false };
+            L.append(g);
+            g.setPointerCapture(e.pointerId);
+          });
+          g.addEventListener('pointermove', e => {
+            if (!drag) return;
+            const p0 = pt(e);
+            if (Math.hypot(p0[0] - drag.sx, p0[1] - drag.sy) > 8) drag.moved = true;
+            if (drag.moved) put(g, { x: p0[0] - drag.dx, y: p0[1] - drag.dy });
+          });
+          const endDrag = () => {
+            if (!drag) return;
+            const moved = drag.moved;
+            drag = null;
+            tryPlace(item, st(g).x, st(g).y, !moved);
+          };
+          g.addEventListener('pointerup', endDrag);
+          g.addEventListener('lostpointercapture', endDrag);
+          keyAct(g, () => tryPlace(item, def.home[0], def.home[1], true));
+        });
+
+        return {
+          hint: [kbd('1–4'), ' 选光滑物品 · 或拖进光滑托盘'],
+          reveal() {
+            nodes.filter(n => n.smooth && !n.placed).forEach(snapSmooth);
+            return '玻璃弹珠和陶瓷小杯都是滑滑的（smooth）！';
+          },
+          lock() { locked = true; nodes.forEach(n => { n.g.style.cursor = 'default'; }); },
+          key(e) {
+            const idx = +e.key - 1;
+            if (idx >= 0 && idx < nodes.length) {
+              const it = nodes[idx];
+              tryPlace(it, it.home[0], it.home[1], true);
+              return true;
+            }
+            return false;
+          },
+        };
+      },
+    }], done, '粗和滑挑战'),
+  }],
+
+  /* 4. 重和轻 Heavy and light（跷跷板对比） */
+  ['u4_heavy_light', '重和轻 Heavy and light', (m) => {
+    const p = panel(0);
+    u4_bg(p, 'bg_u4_house.jpg', 0.2);
+    u4_badge(p, '重和轻 Heavy and light', 84, 60, '#2bb673', 0.1);
+
+    const pairs = [
+      { mk: 'hl_p1', y: 120, left: 'melon',   lLbl: '大西瓜', right: 'feather', rLbl: '白羽毛', col: '#2bb673', heavyLeft: true },
+      { mk: 'hl_p2', y: 492, left: 'balloon', lLbl: '彩气球', right: 'bowling', rLbl: '保龄球', col: '#2d7dd2', heavyLeft: false },
+    ];
+
+    S.seesawRings = [];
+    pairs.forEach(pr => {
+      const card = u4_card(p, 80, pr.y, 795, 342, { fill: 'rgba(255,253,247,0.95)', stroke: pr.col, sw: 4, rx: 30 });
+      // 底座三角支点
+      mk('polygon', { points: '398,215 362,285 434,285', fill: '#f59e0b', stroke: '#2b241d', 'stroke-width': 3, 'stroke-linejoin': 'round' }, card);
+      // 倾斜跷跷板
+      const ang = pr.heavyLeft ? -14 : 14;
+      const beam = G(card, { x: 398, y: 215, r: ang });
+      mk('rect', { x: -245, y: -10, width: 490, height: 20, rx: 10, fill: '#38bdf8', stroke: '#2b241d', 'stroke-width': 3 }, beam);
+      const lArt = G(beam, { x: -185, y: -42, r: -ang });
+      u4_drawProp(lArt, pr.left);
+      const rArt = G(beam, { x: 185, y: -42, r: -ang });
+      u4_drawProp(rArt, pr.right);
+
+      T(card, pr.lLbl, { x: 195, y: 318, size: 25, fill: '#2b241d', weight: 800, anchor: 'middle' });
+      T(card, pr.rLbl, { x: 600, y: 318, size: 25, fill: '#2b241d', weight: 800, anchor: 'middle' });
+
+      const ringX = pr.heavyLeft ? 215 : 580;
+      const ring = mk('circle', { cx: ringX, cy: 200, r: 78, fill: 'none', stroke: '#2bb673', 'stroke-width': 7 }, card);
+      put(ring, { o: 0 });
+      S.seesawRings.push(ring);
+
+      put(card, { o: 0, s: 0.9 });
+      const tAt = m(pr.mk);
+      tw(card, { o: 1, s: 1 }, tAt, 0.4, back);
+      sfx('u4_heavy_light', tAt, 'pop', 0.45);
+    });
+  }, {
+    lead: false,
+    hold: 1.5,
+    ask: done => quiz({ x: 915, y: 175, w: 605, cls: 'side' }, [
+      {
+        id: 'u4-q-hl1',
+        prompt: ['第一组跷跷板上，哪个东西是【重 heavy】的？'],
+        build: choice(
+          [
+            [u4_swatch('#2bb673'), '大西瓜 · heavy'],
+            [u4_swatch('#cbd5e1'), '白羽毛 · light'],
+          ],
+          0,
+          '答对了！大西瓜沉甸甸的（heavy），把跷跷板压下去啦！',
+          [null, '白羽毛轻轻的（light），被翘到高高的天上去了！'],
+          () => {
+            if (S.seesawRings?.[0]) fx(S.seesawRings[0], { o: 1 }, 0, 0.35, back);
+            u4_playSfx('chime', 0.6);
+          }
+        ),
+      },
+      {
+        id: 'u4-q-hl2',
+        prompt: ['第二组跷跷板上，哪个东西是【重 heavy】的？'],
+        build: choice(
+          [
+            [u4_swatch('#ff7aa2'), '彩气球 · light'],
+            [u4_swatch('#334155'), '保龄球 · heavy'],
+          ],
+          1,
+          '真棒！保龄球重重的（heavy），彩色气球轻轻飘在上面（light）！',
+          ['彩气球里面都是空气，轻轻的（light）哦！', null],
+          () => {
+            if (S.seesawRings?.[1]) fx(S.seesawRings[1], { o: 1 }, 0, 0.35, back);
+            u4_playSfx('chime', 0.6);
+          }
+        ),
+      },
+    ], done, '重和轻跷跷板'),
+  }],
+
+  /* 5. 复习挑战：双特征小侦探（硬和粗 / 软和轻 / 重和硬） */
+  ['u4_revise', '复习！双特征小侦探', (m, D) => {
+    const p = panel(0);
+    u4_bg(p, 'bg_u4_house.jpg', 0.2);
+    u4_badge(p, '复习挑战 · 双特征小侦探', 84, 60, '#9d4edd', 0.1);
+
+    const expWrap = G(p, { x: 245, y: 525 });
+    const exp = Doudou.create(expWrap, { x: 0, y: 0, s: 1.5, hat: true, scarf: true, prop: 'magnifier', propSide: 'L', eyeColor: 'brown', expr: 'happy', armL: 26, armR: -18 });
+
+    const rows = [
+      ['硬和粗 · hard & rough', '#dc2626', 'brick',   '红砖块'],
+      ['软和轻 · soft & light', '#2d7dd2', 'feather', '白羽毛'],
+      ['重和硬 · heavy & hard', '#334155', 'bowling', '保龄球'],
+    ];
+
+    S.u4ReviseRows = [];
+    rows.forEach(([lbl, col, kind, name], i) => {
+      const cy = 180 + i * 205;
+      const card = u4_card(p, 430, cy, 465, 168, { fill: 'rgba(255,253,247,0.95)', stroke: col, sw: 4, rx: 26 });
+      T(card, lbl, { x: 24, y: 66, size: 22, fill: col, weight: 800 });
+      T(card, '是哪一个物体？', { x: 24, y: 112, size: 20, fill: '#665c50', weight: 600 });
+
+      const slotBox = mk('rect', { x: 325, y: 24, width: 118, height: 120, rx: 20, fill: '#f8fafc', stroke: col, 'stroke-width': 3, 'stroke-dasharray': '7 5' }, card);
+      const qMk = T(card, '?', { x: 384, y: 98, size: 42, fill: col, weight: 800, anchor: 'middle' });
+      const ansG = G(card, { x: 384, y: 74, o: 0, s: 0.65 });
+      u4_drawProp(ansG, kind);
+      T(ansG, name, { x: 0, y: 56, size: 17, fill: col, weight: 800, anchor: 'middle' });
+      S.u4ReviseRows.push({ slotBox, qMk, ansG });
+      put(card, { o: 0, y: cy + 20 });
+      tw(card, { o: 1, y: cy }, m('rv_go', i * 0.3), 0.35, out);
+    });
+
+    clockRun(t => {
+      Doudou.animateIdle(exp, t, { armL: 26, armR: -18 });
+    }, D, { tail: true });
+  }, {
+    lead: false,
+    hold: 1.5,
+    ask: done => {
+      const revealRow = idx => {
+        const r = S.u4ReviseRows?.[idx];
+        if (r) {
+          r.slotBox.removeAttribute('stroke-dasharray');
+          fx(r.qMk, { o: 0 }, 0, 0.18);
+          fx(r.ansG, { o: 1, s: 1 }, 0.05, 0.32, back);
+          u4_playSfx('chime', 0.6);
+        }
+      };
+      return quiz({ x: 915, y: 175, w: 605, cls: 'side' }, [
+        {
+          id: 'u4-rv-1',
+          prompt: ['哪一个东西同时是【硬和粗 hard & rough】？'],
+          build: choice(
+            [
+              [u4_swatch('#dc2626'), '红砖块'],
+              [u4_swatch('#ffd166'), '软海绵'],
+              [u4_swatch('#38bdf8'), '玻璃弹珠'],
+            ],
+            0,
+            '答对了！红砖块又硬又粗糙（hard & rough）！',
+            [null, '软海绵是软的，不是硬的哦！', '玻璃弹珠虽然硬，但表面是滑滑的哦！'],
+            () => revealRow(0)
+          ),
+        },
+        {
+          id: 'u4-rv-2',
+          prompt: ['哪一个东西同时是【软和轻 soft & light】？'],
+          build: choice(
+            [
+              [u4_swatch('#334155'), '保龄球'],
+              [u4_swatch('#cbd5e1'), '白羽毛'],
+              [u4_swatch('#dc2626'), '红砖块'],
+            ],
+            1,
+            '真棒！白羽毛又软又轻（soft & light），风一吹就飘起来！',
+            ['保龄球又重又硬哦！', null, '红砖块又硬又重哦！'],
+            () => revealRow(1)
+          ),
+        },
+        {
+          id: 'u4-rv-3',
+          prompt: ['哪一个东西同时是【重和硬 heavy & hard】？'],
+          build: choice(
+            [
+              [u4_swatch('#ff7aa2'), '彩气球'],
+              [u4_swatch('#cbd5e1'), '白羽毛'],
+              [u4_swatch('#334155'), '保龄球'],
+            ],
+            2,
+            '全对啦！保龄球又重又硬（heavy & hard）！',
+            ['彩气球轻轻软软的哦！', '白羽毛又软又轻哦！', null],
+            () => revealRow(2)
+          ),
+        },
+      ], done, '双特征复习');
+    },
+  }],
+
+  /* 6. 通关总结 */
+  ['u4_outro', '通关成功 · 触觉小侦探！', (m, D) => {
+    const p = panel(0);
+    u4_bg(p, 'bg_u4_house.jpg', 0.18);
+    sfx('u4_outro', 0.15, 'applause', 0.45);
+    sfx('u4_outro', 0.25, 'chime', 0.5);
+
+    u4_badge(p, '单元 4 通关 · 触觉小侦探！', 84, 62, '#2bb673', 0.1);
+    const expWrap = G(p, { x: 330, y: 515 });
+    const exp = Doudou.create(expWrap, { x: 0, y: 0, s: 1.54, hat: true, scarf: true, prop: 'badge', propSide: 'R', eyeColor: 'brown', expr: 'happy', armL: 24, armR: -78 });
+
+    const wins = [
+      ['o1', '分辨硬邦邦（Hard）与软绵绵（Soft）', '#ff5a5f', 0, 'dot'],
+      ['o2', '摸出粗糙（Rough）与光滑（Smooth）的表面', '#2d7dd2', 1, 'star'],
+      ['o3', '用跷跷板比较重（Heavy）与轻（Light）', '#2bb673', 2, 'sq'],
+    ];
+    wins.forEach(([mkName, txt, col, idx, icon]) => {
+      const card = G(p, { x: 640, y: 245 + idx * 175, o: 0, s: 0.88 });
+      mk('rect', { x: 0, y: -48, width: 820, height: 112, rx: 28, fill: 'rgba(255,255,255,0.95)', stroke: col, 'stroke-width': 4 }, card);
+      if (icon === 'dot') mk('circle', { cx: 48, cy: 8, r: 16, fill: col }, card);
+      else if (icon === 'star') mk('polygon', { points: '48,-10 54,2 66,2 56,10 60,22 48,15 36,22 40,10 30,2 42,2', fill: col }, card);
+      else mk('rect', { x: 34, y: -6, width: 28, height: 28, rx: 5, fill: col }, card);
+      T(card, txt, { x: 86, y: 18, size: 32, fill: '#2b241d', weight: 700 });
+      tw(card, { o: 1, s: 1 }, m(mkName), 0.35, back);
+    });
+
+    clockRun(t => {
+      put(expWrap, { y: 515 - Math.abs(12 * Math.sin(t * 4)) });
+      Doudou.animateIdle(exp, t, { armL: 24, armR: -78 + 14 * Math.sin(t * 6.5) });
+    }, D, { tail: true });
+  }, { lead: false }],
+].map(([id, title, run, extra]) => ({ id, title, run, ...extra }));
+
+window.MUSIC_LEVELS = { under: -16, open: -8 };
+music('audio/bgm/lovely_house.mp3', ['u4_intro', 'u4_hard_soft', 'u4_rough_smooth', 'u4_heavy_light', 'u4_revise', 'u4_outro'], 0.34);
+
+boot();
+</script>
+</body>
+</html>
